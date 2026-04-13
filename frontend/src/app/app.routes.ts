@@ -9,7 +9,7 @@ export const routes: Routes = [
     { path: 'login', component: LoginComponent },
     { path: 'register', component: RegisterComponent },
     { path: 'forgot-password', component: ForgotPasswordComponent },
-    { path: 'onboarding', component: OnboardingComponent },
+    { path: 'onboarding', canActivate: [authGuard], component: OnboardingComponent },
     { path: 'dashboard', canActivate: [authGuard], loadComponent: () => import('./dashboard/dashboard.component').then(m => m.DashboardComponent) },
     { path: 'budgets', canActivate: [authGuard], loadComponent: () => import('./budgets/budgets-view/budgets-view.component').then(m => m.BudgetsViewComponent) },
     { path: 'finance', canActivate: [authGuard], loadComponent: () => import('./finance/finance-view/finance-view.component').then(m => m.FinanceViewComponent) },
