@@ -1,0 +1,100 @@
+<div class="dashboard-wrapper">
+    <app-top-nav></app-top-nav>
+
+    <main class="dashboard-content">
+        <header class="page-header"
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h1 style="font-size: 2rem;">Monthly Budgets</h1>
+            <button class="btn btn-primary" (click)="showBudgetForm = true">+ Set Limit</button>
+        </header>
+
+        <div class="filters-bar glass-panel"
+            style="padding: 1rem; margin-bottom: 2rem; border-radius: var(--radius-md);">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" style="font-size: 0.8rem;">Select Target Month</label>
+                <input type="month" class="form-control" style="max-width: 200px;" [(ngModel)]="selectedMonth"
+                    (change)="onMonthChange()">
+            </div>
+        </div>
+
+        <div *ngIf="isLoading" style="padding: 3rem; text-align: center;">
+            <span class="spinner" style="border-top-color: var(--primary);"></span>
+        </div>
+
+        <!-- Active Budgets Grid -->
+        <div *ngIf="!isLoading && budgetItems.length > 0"
+            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+            <div class="glass-panel" *ngFor="let item of budgetItems"
+                style="padding: 1.5rem; position: relative; border-radius: var(--radius-md);">
+                <!-- Card Header -->
+                <div
+                    style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                    <span class="category-badge" [style.backgroundColor]="item.color + '33'" [style.color]="item.color">
+                        {{ item.categoryName }}
+                    </span>
+                    <button (click)="deleteBudget(item.id)"
+                        style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.25rem;">&times;</button>
+                </div>
+
+                <!-- Amounts -->
+                <div
+                    style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.5rem;">
+                    <div>
+                        <div style="font-size: 1.25rem; font-weight: 600; color: #fff;">₹{{ item.spentAmount |
+                            number:'1.2-2' }}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">spent</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 1rem; color: var(--text-muted);">₹{{ item.amount | number:'1.2-2' }}
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">limit</div>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="progress-track">
+                    <div class="progress-fill" [style.width.%]="item.progress"
+                        [style.backgroundColor]="item.progress > 90 ? 'var(--accent)' : item.progress > 75 ? '#F59E0B' : item.color">
+                    </div>
+                </div>
+                <div style="text-align: right; font-size: 0.75rem; margin-top: 0.25rem;"
+                    [style.color]="item.progress > 90 ? 'var(--accent)' : 'var(--text-muted)'">
+                    {{ item.progress }}% consumed
+                </div>
+            </div>
+        </div>
+
+        <div *ngIf="!isLoading && budgetItems.length === 0" class="glass-panel"
+            style="padding: 3rem; text-align: center; color: var(--text-muted); border-radius: var(--radius-md);">
+            <p>No budgets assigned for this month.</p>
+            <button class="btn btn-secondary" style="margin-top: 1rem;" (click)="showBudgetForm = true">Create your
+                first budget</button>
+        </div>
+    </main>
+</div>
+
+<!-- Modal Form -->
+<div class="modal-overlay animate-fade-in" *ngIf="showBudgetForm">
+    <div class="modal-container glass-panel" style="padding: 2rem;">
+        <button type="button" class="btn close-btn" (click)="showBudgetForm = false"
+            style="position: absolute; right: 1rem; top: 1rem; background: transparent; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer;">&times;</button>
+        <h2 style="font-family: 'Outfit'; margin-bottom: 1.5rem; color: #fff;">Set Limit</h2>
+
+        <div class="alert-error" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+        <div class="form-group">
+            <label class="form-label">Category</label>
+            <select class="form-control" [(ngModel)]="selectedCategoryId">
+                <option value="" disabled>Select category</option>
+                <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Maximum Monthly Limit (INR)</label>
+            <input type="number" class="form-control" [(ngModel)]="newBudgetAmount">
+        </div>
+
+        <button class="btn btn-primary btn-block" (click)="saveBudget()">Save Budget</button>
+    </div>
+</div>

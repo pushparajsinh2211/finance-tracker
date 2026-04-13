@@ -1,0 +1,55 @@
+<nav class="top-nav glass-panel">
+    <div class="logo">FamilyLedger</div>
+
+    <div style="display: flex; gap: 1.5rem; align-items: center;">
+        <a routerLink="/dashboard" routerLinkActive="active-link"
+            style="color: var(--text-muted); text-decoration: none;">Transactions</a>
+        <a routerLink="/budgets" routerLinkActive="active-link"
+            style="color: var(--text-muted); text-decoration: none;">Budgets</a>
+        <a routerLink="/finance" routerLinkActive="active-link"
+            style="color: var(--text-muted); text-decoration: none;">Loans & Savings</a>
+        <a routerLink="/family" routerLinkActive="active-link"
+            style="color: var(--text-muted); text-decoration: none;">Family</a>
+
+        <!-- Notification Bell -->
+        <div style="position: relative; margin-left: 1rem;">
+            <button (click)="toggleDropdown()"
+                style="background: transparent; border: none; font-size: 1.2rem; cursor: pointer; position: relative; color: #fff;">
+                🔔
+                <span *ngIf="unreadCount > 0" class="badge">{{ unreadCount }}</span>
+            </button>
+
+            <!-- Dropdown -->
+            <div *ngIf="showDropdown" class="glass-panel"
+                style="position: absolute; right: 0; top: 100%; width: 300px; padding: 1rem; margin-top: 0.5rem; z-index: 1000; border-radius: var(--radius-md);">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                    <h4 style="margin: 0; color: #fff;">Notifications</h4>
+                    <button *ngIf="unreadCount > 0" (click)="markAllAsRead()"
+                        style="background: none; border: none; color: var(--primary); cursor: pointer; font-size: 0.8rem;">Mark
+                        all read</button>
+                </div>
+
+                <div *ngIf="notifications.length === 0"
+                    style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 1rem 0;">
+                    No notifications yet.
+                </div>
+
+                <div style="max-height: 300px; overflow-y: auto;">
+                    <div *ngFor="let n of notifications" [style.opacity]="n.isRead ? '0.6' : '1'"
+                        style="padding: 0.75rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem;">
+                        <div style="color: var(--text-muted); font-size: 0.75rem; margin-bottom: 0.25rem;">{{
+                            n.createdAt | date:'short' }}</div>
+                        <div style="color: #fff;">{{ n.message }}</div>
+                        <button *ngIf="!n.isRead" (click)="markAsRead(n.id)"
+                            style="background: none; border: none; color: var(--secondary); cursor: pointer; font-size: 0.75rem; margin-top: 0.25rem; padding: 0;">Mark
+                            read</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn btn-secondary" style="padding: 0.4rem 1rem; font-size: 0.85rem; margin-left: 0.5rem;"
+            (click)="logout()">Sign Out</button>
+    </div>
+</nav>

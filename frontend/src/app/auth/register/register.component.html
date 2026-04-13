@@ -1,0 +1,40 @@
+<div class="auth-wrapper animate-fade-in">
+    <div class="glass-panel auth-panel">
+        <div class="auth-header">
+            <div class="logo">FamilyLedger</div>
+            <h2>Create Account</h2>
+            <p>Join to collaborate on family spending.</p>
+        </div>
+
+        <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+            <div class="form-group">
+                <label class="form-label">Email Address</label>
+                <input type="email" class="form-control" formControlName="email" placeholder="you@example.com">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-control" formControlName="password"
+                    placeholder="At least 6 characters">
+            </div>
+
+            <div class="alert-error" *ngIf="errorMessage">
+                {{ errorMessage }}
+            </div>
+
+            <div class="alert-success" *ngIf="successMessage"
+                style="background: rgba(16, 185, 129, 0.1); color: var(--secondary); padding: 0.75rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; font-size: 0.875rem; border: 1px solid rgba(16, 185, 129, 0.2);">
+                {{ successMessage }}
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" [disabled]="registerForm.invalid || isLoading">
+                <span *ngIf="!isLoading">Sign Up</span>
+                <span *ngIf="isLoading" class="spinner"></span>
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            Already have an account? <a routerLink="/login">Log in</a>
+        </div>
+    </div>
+</div>

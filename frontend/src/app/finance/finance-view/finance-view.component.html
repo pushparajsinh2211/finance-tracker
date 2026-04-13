@@ -1,0 +1,136 @@
+<div class="dashboard-wrapper">
+    <app-top-nav></app-top-nav>
+
+    <main class="dashboard-content">
+        <div *ngIf="isLoading" style="padding: 3rem; text-align: center;">
+            <span class="spinner" style="border-top-color: var(--primary);"></span>
+        </div>
+
+        <div *ngIf="!isLoading">
+            <!-- EMIs Section -->
+            <header class="page-header"
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h1 style="font-size: 1.75rem;">Active EMIs / Loans</h1>
+                <button class="btn btn-primary" (click)="showEmiForm = true">+ Log EMI</button>
+            </header>
+
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+                <div *ngIf="emis.length === 0" style="color: var(--text-muted); padding: 1rem;">No EMIs active.</div>
+                <div class="glass-panel" *ngFor="let emi of emis"
+                    style="padding: 1.5rem; border-radius: var(--radius-md); border-left: 4px solid var(--secondary);">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <h3 style="margin-bottom: 0.5rem; color: #fff;">{{ emi.lenderName }}</h3>
+                        <button (click)="deleteEmi(emi.id)"
+                            style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.25rem;">&times;</button>
+                    </div>
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">Principal: ₹{{ emi.principal |
+                        number:'1.0-0' }}</p>
+                    <div style="margin-top: 1rem; font-size: 1.25rem; font-weight: 600; color: var(--secondary);">
+                        ₹{{ emi.monthlyEmi | number:'1.2-2' }} <span
+                            style="font-size: 0.85rem; font-weight: 400; color: var(--text-muted);">/ month</span>
+                    </div>
+                    <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.5rem;">{{ emi.tenureMonths }}
+                        months from {{ emi.startDate | date }}</p>
+                </div>
+            </div>
+
+            <!-- Savings Section -->
+            <header class="page-header"
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h1 style="font-size: 1.75rem;">Savings Goals</h1>
+                <button class="btn btn-primary" (click)="showSavingsForm = true">+ Add Goal</button>
+            </header>
+
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+                <div *ngIf="savings.length === 0" style="color: var(--text-muted); padding: 1rem;">No savings goals set.
+                </div>
+                <div class="glass-panel" *ngFor="let s of savings"
+                    style="padding: 1.5rem; border-radius: var(--radius-md); border-left: 4px solid var(--primary);">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <h3 style="margin-bottom: 0.5rem; color: #fff;">{{ s.name }}</h3>
+                        <button (click)="deleteSavings(s.id)"
+                            style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.25rem;">&times;</button>
+                    </div>
+                    <div
+                        style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; margin-top: 1rem;">
+                        <div style="font-size: 1.1rem; color: #fff;">₹{{ s.currentAmount | number:'1.0-0' }}</div>
+                        <div style="font-size: 0.9rem; color: var(--text-muted);">Target: ₹{{ s.targetAmount |
+                            number:'1.0-0' }}</div>
+                    </div>
+                    <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 999px;">
+                        <div [style.width.%]="(s.currentAmount / s.targetAmount) * 100"
+                            style="height: 100%; background: var(--primary); border-radius: 999px;"></div>
+                    </div>
+                    <p *ngIf="s.deadline" style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.5rem;">
+                        Target by {{ s.deadline | date }}</p>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Savings Modal -->
+<div class="modal-overlay animate-fade-in" *ngIf="showSavingsForm">
+    <div class="modal-container glass-panel" style="padding: 2rem;">
+        <button type="button" class="btn close-btn" (click)="showSavingsForm = false"
+            style="position: absolute; right: 1rem; top: 1rem; background: transparent; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer;">&times;</button>
+        <h2 style="font-family: 'Outfit'; margin-bottom: 1.5rem; color: #fff;">New Savings Goal</h2>
+
+        <div class="form-group">
+            <label class="form-label">Goal Name</label>
+            <input type="text" class="form-control" [(ngModel)]="newSavings.name">
+        </div>
+        <div style="display: flex; gap: 1rem;">
+            <div class="form-group" style="flex: 1;">
+                <label class="form-label">Current Saved</label>
+                <input type="number" class="form-control" [(ngModel)]="newSavings.currentAmount">
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label class="form-label">Target Amount</label>
+                <input type="number" class="form-control" [(ngModel)]="newSavings.targetAmount">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Deadline (Optional)</label>
+            <input type="date" class="form-control" [(ngModel)]="newSavings.deadline">
+        </div>
+        <button class="btn btn-primary btn-block" (click)="saveSavings()">Save Goal</button>
+    </div>
+</div>
+
+<!-- EMI Modal -->
+<div class="modal-overlay animate-fade-in" *ngIf="showEmiForm">
+    <div class="modal-container glass-panel" style="padding: 2rem;">
+        <button type="button" class="btn close-btn" (click)="showEmiForm = false"
+            style="position: absolute; right: 1rem; top: 1rem; background: transparent; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer;">&times;</button>
+        <h2 style="font-family: 'Outfit'; margin-bottom: 1.5rem; color: #fff;">Log Loan / EMI</h2>
+
+        <div class="form-group">
+            <label class="form-label">Lender Name</label>
+            <input type="text" class="form-control" [(ngModel)]="newEmi.lenderName" placeholder="e.g. HDFC Bank">
+        </div>
+        <div style="display: flex; gap: 1rem;">
+            <div class="form-group" style="flex: 1;">
+                <label class="form-label">Principal Amount</label>
+                <input type="number" class="form-control" [(ngModel)]="newEmi.principal">
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label class="form-label">Monthly EMI</label>
+                <input type="number" class="form-control" [(ngModel)]="newEmi.monthlyEmi">
+            </div>
+        </div>
+        <div style="display: flex; gap: 1rem;">
+            <div class="form-group" style="flex: 1;">
+                <label class="form-label">Start Date</label>
+                <input type="date" class="form-control" [(ngModel)]="newEmi.startDate">
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label class="form-label">Tenure (Months)</label>
+                <input type="number" class="form-control" [(ngModel)]="newEmi.tenureMonths">
+            </div>
+        </div>
+        <button class="btn btn-primary btn-block" (click)="saveEmi()">Save EMI</button>
+    </div>
+</div>

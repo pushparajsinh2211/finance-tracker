@@ -1,0 +1,17 @@
+  Determining projects to restore...
+  Writing C:\Users\HP\AppData\Local\Temp\tmphiirue.tmp
+info : X.509 certificate chain validation will use the default trust store selected by .NET for code signing.
+info : X.509 certificate chain validation will use the default trust store selected by .NET for timestamping.
+info : Adding PackageReference for package 'Microsoft.AspNetCore.Authentication.JwtBearer' into project 'G:\Personal Work\Projects\FamilyFinanceTracker\backend\FamilyLedger.Api\FamilyLedger.Api.csproj'.
+info :   CACHE https://api.nuget.org/v3/registration5-gz-semver2/microsoft.aspnetcore.authentication.jwtbearer/index.json
+info :   CACHE https://api.nuget.org/v3/registration5-gz-semver2/microsoft.aspnetcore.authentication.jwtbearer/page/0.0.1-alpha/3.1.15.json
+info :   CACHE https://api.nuget.org/v3/registration5-gz-semver2/microsoft.aspnetcore.authentication.jwtbearer/page/3.1.16/6.0.9.json
+info :   CACHE https://api.nuget.org/v3/registration5-gz-semver2/microsoft.aspnetcore.authentication.jwtbearer/page/6.0.10/8.0.0.json
+info :   CACHE https://api.nuget.org/v3/registration5-gz-semver2/microsoft.aspnetcore.authentication.jwtbearer/page/8.0.1/11.0.0-preview.1.26104.118.json
+info :   CACHE https://api.nuget.org/v3/registration5-gz-semver2/microsoft.aspnetcore.authentication.jwtbearer/page/11.0.0-preview.2.26159.112/11.0.0-preview.2.26159.112.json
+info : Restoring packages for G:\Personal Work\Projects\FamilyFinanceTracker\backend\FamilyLedger.Api\FamilyLedger.Api.csproj...
+info :   CACHE https://api.nuget.org/v3/vulnerabilities/index.json
+info :   CACHE https://api.nuget.org/v3-vulnerabilities/2026.04.10.00.08.26/vulnerability.base.json
+info :   CACHE https://api.nuget.org/v3-vulnerabilities/2026.04.10.00.08.26/2026.04.12.12.08.41/vulnerability.update.json
+error: NU1202: Package Microsoft.AspNetCore.Authentication.JwtBearer 10.0.5 is not compatible with net8.0 (.NETCoreApp,Version=v8.0). Package Microsoft.AspNetCore.Authentication.JwtBearer 10.0.5 supports: net10.0 (.NETCoreApp,Version=v10.0)
+error: Package 'Microsoft.AspNetCore.Authentication.JwtBearer' is incompatible with 'all' frameworks in project 'G:\Personal Work\Projects\FamilyFinanceTracker\backend\FamilyLedger.Api\FamilyLedger.Api.csproj'.

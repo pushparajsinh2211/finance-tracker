@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Hash": "QacqUifhG9mOh4Smhc8w9ARwbjdE1zjPGz/Ryd8RDxg=",
+  "Source": "FamilyLedger.Api",
+  "BasePath": "_content/FamilyLedger.Api",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": [],
+  "Endpoints": []
+}

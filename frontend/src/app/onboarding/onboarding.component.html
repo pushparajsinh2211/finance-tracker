@@ -1,0 +1,70 @@
+<div class="onboarding-wrapper animate-fade-in">
+    <div class="glass-panel auth-panel" style="max-width: 500px;">
+        <div class="auth-header" style="margin-bottom: 1.5rem;">
+            <div class="logo">FamilyLedger</div>
+            <h2>Get Started</h2>
+            <p>Set up your family environment to begin tracking expenses.</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn" [class.active]="activeTab === 'create'" (click)="setTab('create')">
+                Create Family
+            </button>
+            <button class="tab-btn" [class.active]="activeTab === 'join'" (click)="setTab('join')">
+                Join Family
+            </button>
+        </div>
+
+        <div class="alert-error" *ngIf="errorMsg">
+            {{ errorMsg }}
+        </div>
+
+        <!-- CREATE FORM -->
+        <div *ngIf="activeTab === 'create'" class="animate-fade-in">
+            <form [formGroup]="createForm" (ngSubmit)="onCreate()">
+                <div class="form-group">
+                    <label class="form-label">Family Name</label>
+                    <input type="text" class="form-control" formControlName="name" placeholder="e.g. The Patel Family">
+                    <div class="text-danger" *ngIf="createForm.get('name')?.touched && createForm.get('name')?.invalid">
+                        Name must be at least 2 characters.
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block" [disabled]="createForm.invalid || isLoading">
+                    <span *ngIf="!isLoading">Create & Invite</span>
+                    <span *ngIf="isLoading" class="spinner"></span>
+                </button>
+            </form>
+        </div>
+
+        <!-- JOIN FORM -->
+        <div *ngIf="activeTab === 'join'" class="animate-fade-in">
+            <form [formGroup]="joinForm" (ngSubmit)="onJoin()">
+                <div class="form-group">
+                    <label class="form-label">Invite Code</label>
+                    <input type="text" class="form-control" formControlName="inviteCode" placeholder="8-character code"
+                        maxlength="8">
+                    <div class="text-danger"
+                        *ngIf="joinForm.get('inviteCode')?.touched && joinForm.get('inviteCode')?.invalid">
+                        Valid 8-character invite code is required.
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Your Name</label>
+                    <input type="text" class="form-control" formControlName="displayName" placeholder="e.g. Raj">
+                    <div class="text-danger"
+                        *ngIf="joinForm.get('displayName')?.touched && joinForm.get('displayName')?.invalid">
+                        Name is required.
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block" [disabled]="joinForm.invalid || isLoading">
+                    <span *ngIf="!isLoading">Join Family</span>
+                    <span *ngIf="isLoading" class="spinner"></span>
+                </button>
+            </form>
+        </div>
+
+    </div>
+</div>

@@ -1,0 +1,72 @@
+<div class="glass-panel" style="padding: 2rem; border-radius: var(--radius-lg); position: relative;">
+    <button type="button" class="btn close-btn" (click)="onCancel()"
+        style="position: absolute; right: 1rem; top: 1rem; background: transparent; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer; transition: color 0.3s; padding: 0.5rem;"
+        onmouseover="this.style.color='#F8FAFC'" onmouseout="this.style.color='#94A3B8'">&times;</button>
+
+    <h2 style="margin-bottom: 1.5rem; font-size: 1.5rem; color: #fff; font-family: 'Outfit', sans-serif;">
+        {{ initialExpense ? 'Edit Expense' : 'Log New Expense' }}
+    </h2>
+
+    <div class="alert-error" *ngIf="errorMsg">{{ errorMsg }}</div>
+
+    <form [formGroup]="expenseForm" (ngSubmit)="onSubmit()">
+        <div class="form-group">
+            <label class="form-label">Category</label>
+            <select class="form-control" formControlName="categoryId">
+                <option value="" disabled>Select a category</option>
+                <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
+            </select>
+        </div>
+
+        <div style="display: flex; gap: 1rem;">
+            <div class="form-group" style="flex: 1;">
+                <label class="form-label">Amount (INR)</label>
+                <input type="number" class="form-control" formControlName="amount" step="0.01" placeholder="0.00">
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label class="form-label">Date</label>
+                <input type="date" class="form-control" formControlName="date">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Note (Optional)</label>
+            <input type="text" class="form-control" formControlName="note" placeholder="What was this for?"
+                maxlength="200">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Attach Receipt (Optional)</label>
+            <input type="file" class="form-control" (change)="onFileSelected($event)" accept="image/*,.pdf"
+                style="padding: 0.5rem 1rem;">
+            <div *ngIf="expenseForm.get('receiptUrl')?.value" style="margin-top: 0.5rem;">
+                <a [href]="expenseForm.get('receiptUrl')?.value" target="_blank"
+                    style="color: var(--secondary); font-size: 0.85rem; text-decoration: underline;">View existing
+                    receipt</a>
+            </div>
+        </div>
+
+        <div class="form-group" style="flex-direction: row; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+            <input type="checkbox" id="recurringToggle" formControlName="isRecurring"
+                style="width: 1.25rem; height: 1.25rem; cursor: pointer; accent-color: var(--primary);">
+            <label for="recurringToggle" class="form-label" style="margin-bottom: 0; cursor: pointer;">Mark as monthly
+                recurring</label>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button type="submit" class="btn btn-primary" style="flex: 2;"
+                [disabled]="expenseForm.invalid || isLoading">
+                <span *ngIf="!isLoading">{{ initialExpense ? 'Save Changes' : 'Save Expense' }}</span>
+                <span *ngIf="isLoading && !uploadProgress" class="spinner"></span>
+                <span *ngIf="uploadProgress">Uploading... <span class="spinner"
+                        style="vertical-align: middle; width: 1rem; height: 1rem; margin-left: 0.5rem;"></span></span>
+            </button>
+
+            <button *ngIf="initialExpense" type="button" class="btn btn-secondary"
+                style="flex: 1; border-color: rgba(244, 63, 94, 0.4); color: var(--accent);" (click)="onDelete()"
+                [disabled]="isLoading">
+                Delete
+            </button>
+        </div>
+    </form>
+</div>

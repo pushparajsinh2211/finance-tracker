@@ -1,0 +1,7 @@
+backend/FamilyLedger.Api/appsettings.json
+backend/FamilyLedger.Api/appsettings.Development.json
+backend/FamilyLedger.Api/bin/
+backend/FamilyLedger.Api/obj/
+frontend/node_modules/
+frontend/dist/
+.env

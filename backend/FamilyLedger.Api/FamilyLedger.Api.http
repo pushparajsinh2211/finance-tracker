@@ -1,0 +1,6 @@
+@FamilyLedger.Api_HostAddress = http://localhost:5007
+
+GET {{FamilyLedger.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

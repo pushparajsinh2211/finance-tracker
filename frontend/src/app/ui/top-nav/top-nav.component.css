@@ -1,0 +1,16 @@
+.active-link {
+    color: #fff !important;
+    font-weight: 500;
+}
+
+.badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: var(--accent);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: bold;
+    border-radius: 99px;
+    padding: 0.1rem 0.35rem;
+}
