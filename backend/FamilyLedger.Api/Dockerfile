@@ -2,13 +2,12 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Restore dependencies
-COPY ["FamilyLedger.Api/FamilyLedger.Api.csproj", "FamilyLedger.Api/"]
-RUN dotnet restore "FamilyLedger.Api/FamilyLedger.Api.csproj"
+COPY ["FamilyLedger.Api.csproj", "."]
+RUN dotnet restore "./FamilyLedger.Api.csproj"
 
 # Build the payload
 COPY . .
-WORKDIR "/src/FamilyLedger.Api"
-RUN dotnet publish "FamilyLedger.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./FamilyLedger.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 # Serve locally
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
