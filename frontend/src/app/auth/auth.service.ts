@@ -15,7 +15,8 @@ export class AuthService {
   constructor(private http: HttpClient) { }
 
   private getToken(): string | null {
-    return localStorage.getItem('token');
+    const t = localStorage.getItem('token');
+    return (t === 'undefined' || t === 'null') ? null : t;
   }
 
   isLoggedIn(): boolean {
@@ -29,9 +30,10 @@ export class AuthService {
   login(credentials: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/login`, credentials).pipe(
       tap((res: any) => {
-        if (res && res.accessToken) {
-          localStorage.setItem('token', res.accessToken);
-          this.tokenSubject.next(res.accessToken);
+        const token = res?.accessToken || res?.AccessToken || res?.access_token;
+        if (token) {
+          localStorage.setItem('token', token);
+          this.tokenSubject.next(token);
         }
       })
     );
@@ -40,9 +42,10 @@ export class AuthService {
   register(credentials: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/register`, credentials).pipe(
       tap((res: any) => {
-        if (res && res.accessToken) {
-          localStorage.setItem('token', res.accessToken);
-          this.tokenSubject.next(res.accessToken);
+        const token = res?.accessToken || res?.AccessToken || res?.access_token;
+        if (token) {
+          localStorage.setItem('token', token);
+          this.tokenSubject.next(token);
         }
       })
     );
