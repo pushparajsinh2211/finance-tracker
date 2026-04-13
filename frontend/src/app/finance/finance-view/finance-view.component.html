@@ -1,24 +1,24 @@
 <div class="dashboard-wrapper">
     <app-top-nav></app-top-nav>
 
-    <main class="dashboard-content">
-        <div *ngIf="isLoading" style="padding: 3rem; text-align: center;">
+    <main class="dashboard-content container">
+        <div *ngIf="isLoading" style="padding: var(--space-8); text-align: center;">
             <span class="spinner" style="border-top-color: var(--primary);"></span>
         </div>
 
         <div *ngIf="!isLoading">
             <!-- EMIs Section -->
             <header class="page-header"
-                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <h1 style="font-size: 1.75rem;">Active EMIs / Loans</h1>
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4); margin-top: var(--space-8);">
+                <h2>Active EMIs / Loans</h2>
                 <button class="btn btn-primary" (click)="showEmiForm = true">+ Log EMI</button>
             </header>
 
-            <div
-                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
-                <div *ngIf="emis.length === 0" style="color: var(--text-muted); padding: 1rem;">No EMIs active.</div>
-                <div class="glass-panel" *ngFor="let emi of emis"
-                    style="padding: 1.5rem; border-radius: var(--radius-md); border-left: 4px solid var(--secondary);">
+            <div class="grid"
+                style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); margin-bottom: var(--space-12);">
+                <div *ngIf="emis.length === 0" style="color: var(--text-muted);">No EMIs active.</div>
+                <div class="card" *ngFor="let emi of emis"
+                    style="margin-bottom: 0; border-left: 4px solid var(--text-main);">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                         <h3 style="margin-bottom: 0.5rem; color: var(--text-main);">{{ emi.lenderName }}</h3>
                         <button (click)="deleteEmi(emi.id)"
@@ -37,17 +37,17 @@
 
             <!-- Savings Section -->
             <header class="page-header"
-                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <h1 style="font-size: 1.75rem;">Savings Goals</h1>
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                <h2>Savings Goals</h2>
                 <button class="btn btn-primary" (click)="showSavingsForm = true">+ Add Goal</button>
             </header>
 
-            <div
-                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
-                <div *ngIf="savings.length === 0" style="color: var(--text-muted); padding: 1rem;">No savings goals set.
+            <div class="grid"
+                style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); margin-bottom: var(--space-12);">
+                <div *ngIf="savings.length === 0" style="color: var(--text-muted);">No savings goals set.
                 </div>
-                <div class="glass-panel" *ngFor="let s of savings"
-                    style="padding: 1.5rem; border-radius: var(--radius-md); border-left: 4px solid var(--primary);">
+                <div class="card" *ngFor="let s of savings"
+                    style="margin-bottom: 0; border-left: 4px solid var(--primary);">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                         <h3 style="margin-bottom: 0.5rem; color: var(--text-main);">{{ s.name }}</h3>
                         <button (click)="deleteSavings(s.id)"
@@ -55,7 +55,8 @@
                     </div>
                     <div
                         style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; margin-top: 1rem;">
-                        <div style="font-size: 1.1rem; color: var(--text-main);">₹{{ s.currentAmount | number:'1.0-0' }}</div>
+                        <div style="font-size: 1.1rem; color: var(--text-main);">₹{{ s.currentAmount | number:'1.0-0' }}
+                        </div>
                         <div style="font-size: 0.9rem; color: var(--text-muted);">Target: ₹{{ s.targetAmount |
                             number:'1.0-0' }}</div>
                     </div>

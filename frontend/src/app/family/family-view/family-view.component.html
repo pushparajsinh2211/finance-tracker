@@ -1,10 +1,9 @@
 <div class="dashboard-wrapper">
     <app-top-nav></app-top-nav>
 
-    <main class="dashboard-content">
-        <header class="page-header"
-            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-            <h1 style="font-size: 2rem;">Aggregated Dependents Summary</h1>
+    <main class="dashboard-content container">
+        <header class="page-header">
+            <h1>Aggregated Dependents Summary</h1>
         </header>
 
         <div *ngIf="errorMsg" class="alert-error" style="margin-bottom: 2rem;">
@@ -16,23 +15,24 @@
         </div>
 
         <div *ngIf="!isLoading && !errorMsg">
-            <div *ngIf="summary.length === 0" class="glass-panel"
-                style="padding: 3rem; text-align: center; color: var(--text-muted);">
+            <div *ngIf="summary.length === 0" class="card" style="padding: var(--space-12); text-align: center;">
                 <p>No dependent expenses recorded yet.</p>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
-                <div class="glass-panel" *ngFor="let item of summary"
-                    style="padding: 1.5rem; border-radius: var(--radius-md); border-top: 4px solid var(--primary);">
+            <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
+                <div class="card" *ngFor="let item of summary"
+                    style="margin-bottom: 0; border-top: 4px solid var(--primary);">
 
-                    <h3 style="margin-bottom: 0.5rem; color: var(--text-main);">{{ getMemberName(item.member_user_id) }}</h3>
+                    <h3 style="margin-bottom: 0.5rem; color: var(--text-main);">{{ getMemberName(item.member_user_id) }}
+                    </h3>
 
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
                         <span class="category-badge" [style.backgroundColor]="getCategoryColor(item.category_id) + '33'"
                             [style.color]="getCategoryColor(item.category_id)">
                             {{ getCategoryName(item.category_id) }}
                         </span>
-                        <span style="font-size: 1.25rem; font-weight: 600; color: var(--text-main);">₹{{ item.total_amount |
+                        <span style="font-size: 1.25rem; font-weight: 600; color: var(--text-main);">₹{{
+                            item.total_amount |
                             number:'1.0-0' }}</span>
                     </div>
 

@@ -1,15 +1,13 @@
 <div class="dashboard-wrapper">
     <app-top-nav></app-top-nav>
 
-    <main class="dashboard-content">
-        <header class="page-header"
-            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-            <h1 style="font-size: 2rem;">Monthly Budgets</h1>
+    <main class="dashboard-content container">
+        <header class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h1>Monthly Budgets</h1>
             <button class="btn btn-primary" (click)="showBudgetForm = true">+ Set Limit</button>
         </header>
 
-        <div class="filters-bar glass-panel"
-            style="padding: 1rem; margin-bottom: 2rem; border-radius: var(--radius-md);">
+        <div class="filters-bar card">
             <div class="form-group" style="margin-bottom: 0;">
                 <label class="form-label" style="font-size: 0.8rem;">Select Target Month</label>
                 <input type="month" class="form-control" style="max-width: 200px;" [(ngModel)]="selectedMonth"
@@ -22,10 +20,9 @@
         </div>
 
         <!-- Active Budgets Grid -->
-        <div *ngIf="!isLoading && budgetItems.length > 0"
-            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
-            <div class="glass-panel" *ngFor="let item of budgetItems"
-                style="padding: 1.5rem; position: relative; border-radius: var(--radius-md);">
+        <div *ngIf="!isLoading && budgetItems.length > 0" class="grid"
+            style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
+            <div class="card" *ngFor="let item of budgetItems" style="position: relative; margin-bottom: 0;">
                 <!-- Card Header -->
                 <div
                     style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
@@ -40,7 +37,8 @@
                 <div
                     style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.5rem;">
                     <div>
-                        <div style="font-size: 1.25rem; font-weight: 600; color: var(--text-main);">₹{{ item.spentAmount |
+                        <div style="font-size: 1.25rem; font-weight: 600; color: var(--text-main);">₹{{ item.spentAmount
+                            |
                             number:'1.2-2' }}</div>
                         <div style="font-size: 0.85rem; color: var(--text-muted);">spent</div>
                     </div>
@@ -64,8 +62,8 @@
             </div>
         </div>
 
-        <div *ngIf="!isLoading && budgetItems.length === 0" class="glass-panel"
-            style="padding: 3rem; text-align: center; color: var(--text-muted); border-radius: var(--radius-md);">
+        <div *ngIf="!isLoading && budgetItems.length === 0" class="card"
+            style="padding: var(--space-12); text-align: center; color: var(--text-muted);">
             <p>No budgets assigned for this month.</p>
             <button class="btn btn-secondary" style="margin-top: 1rem;" (click)="showBudgetForm = true">Create your
                 first budget</button>
