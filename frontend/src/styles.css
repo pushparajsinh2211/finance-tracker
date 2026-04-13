@@ -1,33 +1,33 @@
-/* You can add global styles to this file, and also import other style files */
+/* Minimalist Black and White Theme */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Brand Colors */
-  --primary: #4F46E5;
-  --primary-hover: #4338CA;
-  --secondary: #10B981;
-  --accent: #F43F5E;
-  
+  /* Brand Colors - Monochrome */
+  --primary: #000000;
+  --primary-hover: #333333;
+  --secondary: #6B7280;
+  --accent: #000000;
+
   /* Backgrounds */
-  --bg-base: #0F172A;
-  --bg-surface: rgba(30, 41, 59, 0.7);
-  --bg-surface-solid: #1E293B;
-  
+  --bg-base: #F9FAFB;
+  --bg-surface: #FFFFFF;
+  --bg-surface-solid: #FFFFFF;
+
   /* Text */
-  --text-main: #F8FAFC;
-  --text-muted: #94A3B8;
-  
+  --text-main: #111827;
+  --text-muted: #6B7280;
+
   /* Borders & Shadows */
-  --border-color: rgba(255, 255, 255, 0.1);
+  --border-color: #E5E7EB;
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --glass-shadow: none;
+
   /* Utilities */
-  --radius-lg: 16px;
-  --radius-md: 8px;
-  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --radius-lg: 8px;
+  --radius-md: 6px;
+  --transition: all 0.2s ease;
 }
 
 * {
@@ -40,28 +40,28 @@ body {
   font-family: 'Inter', sans-serif;
   background-color: var(--bg-base);
   color: var(--text-main);
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.15) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
-  background-attachment: fixed;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: 'Outfit', sans-serif;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
 }
 
-/* Glassmorphism Panel */
+/* Glassmorphism Panel -> Flat Solid Minimal */
 .glass-panel {
   background: var(--bg-surface);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  box-shadow: var(--glass-shadow);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Form Controls */
@@ -75,12 +75,12 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 0.875rem;
   font-weight: 500;
   margin-bottom: 0.5rem;
-  color: var(--text-muted);
+  color: var(--text-main);
 }
 
 .form-control {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid var(--border-color);
+  background: #FFFFFF;
+  border: 1px solid #D1D5DB;
   color: var(--text-main);
   padding: 0.75rem 1rem;
   border-radius: var(--radius-md);
@@ -92,12 +92,11 @@ h1, h2, h3, h4, h5, h6 {
 
 .form-control:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+  box-shadow: 0 0 0 1px var(--primary);
 }
 
 .form-control::placeholder {
-  color: var(--text-muted);
-  opacity: 0.5;
+  color: #9CA3AF;
 }
 
 /* Buttons */
@@ -108,37 +107,34 @@ h1, h2, h3, h4, h5, h6 {
   padding: 0.75rem 1.5rem;
   font-family: 'Outfit', sans-serif;
   font-weight: 500;
-  font-size: 1rem;
+  font-size: 0.95rem;
   border-radius: var(--radius-md);
   cursor: pointer;
-  border: none;
+  border: 1px solid transparent;
   transition: var(--transition);
   text-decoration: none;
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary), #6366F1);
-  color: white;
-  box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.39);
+  background: var(--primary);
+  color: #FFFFFF;
+  border-color: var(--primary);
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
-}
-
-.btn-primary:active {
-  transform: translateY(0);
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
 }
 
 .btn-secondary {
-  background: transparent;
+  background: #FFFFFF;
   color: var(--text-main);
-  border: 1px solid var(--border-color);
+  border: 1px solid #D1D5DB;
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-secondary:hover {
-  background: rgba(255,255,255,0.05);
+  background: #F3F4F6;
 }
 
 .btn-block {
@@ -146,17 +142,117 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .text-danger {
-  color: var(--accent);
+  color: #DC2626;
   font-size: 0.875rem;
   margin-top: 0.25rem;
 }
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.5s ease-out forwards;
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Spinner */
+.spinner {
+  display: inline-block;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid #E5E7EB;
+  border-radius: 50%;
+  border-top-color: var(--primary);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Specific Clean UI Overrides */
+.dashboard-wrapper {
+  min-height: 100vh;
+}
+
+.top-nav {
+  padding: 1rem 2rem;
+  border-radius: 0;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  background: #FFFFFF;
+}
+
+.logo {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: -0.05em;
+  color: var(--primary);
+}
+
+.expense-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.expense-table th {
+  text-align: left;
+  padding: 1rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--border-color);
+  background: #F9FAFB;
+}
+
+.expense-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+  color: var(--text-main);
+}
+
+.expense-table tr:hover td {
+  background-color: #F9FAFB;
+}
+
+.modal-overlay {
+  background: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(2px);
+}
+
+.active-link {
+  color: var(--primary) !important;
+  font-weight: 600 !important;
+}
+
+.badge {
+  background-color: #111827;
+}
+
+.progress-track {
+  background-color: #F3F4F6 !important;
+}
+
+.alert-error {
+  background: #FEF2F2;
+  color: #DC2626;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid #FCA5A5;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
 }

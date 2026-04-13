@@ -20,7 +20,7 @@
                 <div class="glass-panel" *ngFor="let emi of emis"
                     style="padding: 1.5rem; border-radius: var(--radius-md); border-left: 4px solid var(--secondary);">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                        <h3 style="margin-bottom: 0.5rem; color: #fff;">{{ emi.lenderName }}</h3>
+                        <h3 style="margin-bottom: 0.5rem; color: var(--text-main);">{{ emi.lenderName }}</h3>
                         <button (click)="deleteEmi(emi.id)"
                             style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.25rem;">&times;</button>
                     </div>
@@ -49,17 +49,17 @@
                 <div class="glass-panel" *ngFor="let s of savings"
                     style="padding: 1.5rem; border-radius: var(--radius-md); border-left: 4px solid var(--primary);">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                        <h3 style="margin-bottom: 0.5rem; color: #fff;">{{ s.name }}</h3>
+                        <h3 style="margin-bottom: 0.5rem; color: var(--text-main);">{{ s.name }}</h3>
                         <button (click)="deleteSavings(s.id)"
                             style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.25rem;">&times;</button>
                     </div>
                     <div
                         style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; margin-top: 1rem;">
-                        <div style="font-size: 1.1rem; color: #fff;">₹{{ s.currentAmount | number:'1.0-0' }}</div>
+                        <div style="font-size: 1.1rem; color: var(--text-main);">₹{{ s.currentAmount | number:'1.0-0' }}</div>
                         <div style="font-size: 0.9rem; color: var(--text-muted);">Target: ₹{{ s.targetAmount |
                             number:'1.0-0' }}</div>
                     </div>
-                    <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 999px;">
+                    <div style="width: 100%; height: 6px; background: rgba(0, 0, 0, 0.1); border-radius: 999px;">
                         <div [style.width.%]="(s.currentAmount / s.targetAmount) * 100"
                             style="height: 100%; background: var(--primary); border-radius: 999px;"></div>
                     </div>
@@ -76,7 +76,7 @@
     <div class="modal-container glass-panel" style="padding: 2rem;">
         <button type="button" class="btn close-btn" (click)="showSavingsForm = false"
             style="position: absolute; right: 1rem; top: 1rem; background: transparent; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer;">&times;</button>
-        <h2 style="font-family: 'Outfit'; margin-bottom: 1.5rem; color: #fff;">New Savings Goal</h2>
+        <h2 style="font-family: 'Outfit'; margin-bottom: 1.5rem; color: var(--text-main);">New Savings Goal</h2>
 
         <div class="form-group">
             <label class="form-label">Goal Name</label>
@@ -105,7 +105,7 @@
     <div class="modal-container glass-panel" style="padding: 2rem;">
         <button type="button" class="btn close-btn" (click)="showEmiForm = false"
             style="position: absolute; right: 1rem; top: 1rem; background: transparent; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer;">&times;</button>
-        <h2 style="font-family: 'Outfit'; margin-bottom: 1.5rem; color: #fff;">Log Loan / EMI</h2>
+        <h2 style="font-family: 'Outfit'; margin-bottom: 1.5rem; color: var(--text-main);">Log Loan / EMI</h2>
 
         <div class="form-group">
             <label class="form-label">Lender Name</label>

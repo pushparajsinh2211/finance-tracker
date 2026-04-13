@@ -40,7 +40,7 @@
                 <div
                     style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.5rem;">
                     <div>
-                        <div style="font-size: 1.25rem; font-weight: 600; color: #fff;">₹{{ item.spentAmount |
+                        <div style="font-size: 1.25rem; font-weight: 600; color: var(--text-main);">₹{{ item.spentAmount |
                             number:'1.2-2' }}</div>
                         <div style="font-size: 0.85rem; color: var(--text-muted);">spent</div>
                     </div>
@@ -78,7 +78,7 @@
     <div class="modal-container glass-panel" style="padding: 2rem;">
         <button type="button" class="btn close-btn" (click)="showBudgetForm = false"
             style="position: absolute; right: 1rem; top: 1rem; background: transparent; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer;">&times;</button>
-        <h2 style="font-family: 'Outfit'; margin-bottom: 1.5rem; color: #fff;">Set Limit</h2>
+        <h2 style="font-family: 'Outfit'; margin-bottom: 1.5rem; color: var(--text-main);">Set Limit</h2>
 
         <div class="alert-error" *ngIf="errorMessage">{{ errorMessage }}</div>
 

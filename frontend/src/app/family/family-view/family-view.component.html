@@ -25,14 +25,14 @@
                 <div class="glass-panel" *ngFor="let item of summary"
                     style="padding: 1.5rem; border-radius: var(--radius-md); border-top: 4px solid var(--primary);">
 
-                    <h3 style="margin-bottom: 0.5rem; color: #fff;">{{ getMemberName(item.member_user_id) }}</h3>
+                    <h3 style="margin-bottom: 0.5rem; color: var(--text-main);">{{ getMemberName(item.member_user_id) }}</h3>
 
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
                         <span class="category-badge" [style.backgroundColor]="getCategoryColor(item.category_id) + '33'"
                             [style.color]="getCategoryColor(item.category_id)">
                             {{ getCategoryName(item.category_id) }}
                         </span>
-                        <span style="font-size: 1.25rem; font-weight: 600; color: #fff;">₹{{ item.total_amount |
+                        <span style="font-size: 1.25rem; font-weight: 600; color: var(--text-main);">₹{{ item.total_amount |
                             number:'1.0-0' }}</span>
                     </div>
 

@@ -14,7 +14,7 @@
         <!-- Notification Bell -->
         <div style="position: relative; margin-left: 1rem;">
             <button (click)="toggleDropdown()"
-                style="background: transparent; border: none; font-size: 1.2rem; cursor: pointer; position: relative; color: #fff;">
+                style="background: transparent; border: none; font-size: 1.2rem; cursor: pointer; position: relative; color: var(--text-main);">
                 🔔
                 <span *ngIf="unreadCount > 0" class="badge">{{ unreadCount }}</span>
             </button>
@@ -23,8 +23,8 @@
             <div *ngIf="showDropdown" class="glass-panel"
                 style="position: absolute; right: 0; top: 100%; width: 300px; padding: 1rem; margin-top: 0.5rem; z-index: 1000; border-radius: var(--radius-md);">
                 <div
-                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
-                    <h4 style="margin: 0; color: #fff;">Notifications</h4>
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid rgba(0, 0, 0, 0.1); padding-bottom: 0.5rem;">
+                    <h4 style="margin: 0; color: var(--text-main);">Notifications</h4>
                     <button *ngIf="unreadCount > 0" (click)="markAllAsRead()"
                         style="background: none; border: none; color: var(--primary); cursor: pointer; font-size: 0.8rem;">Mark
                         all read</button>
@@ -37,10 +37,10 @@
 
                 <div style="max-height: 300px; overflow-y: auto;">
                     <div *ngFor="let n of notifications" [style.opacity]="n.isRead ? '0.6' : '1'"
-                        style="padding: 0.75rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem;">
+                        style="padding: 0.75rem 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 0.85rem;">
                         <div style="color: var(--text-muted); font-size: 0.75rem; margin-bottom: 0.25rem;">{{
                             n.createdAt | date:'short' }}</div>
-                        <div style="color: #fff;">{{ n.message }}</div>
+                        <div style="color: var(--text-main);">{{ n.message }}</div>
                         <button *ngIf="!n.isRead" (click)="markAsRead(n.id)"
                             style="background: none; border: none; color: var(--secondary); cursor: pointer; font-size: 0.75rem; margin-top: 0.25rem; padding: 0;">Mark
                             read</button>
