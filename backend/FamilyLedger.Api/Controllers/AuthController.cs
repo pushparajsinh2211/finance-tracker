@@ -19,7 +19,7 @@ namespace FamilyLedger.Api.Controllers
             try
             {
                 var session = await _supabaseClient.Auth.SignUp(request.Email, request.Password);
-                return Ok(session);
+                return Ok(new AuthResponse(session));
             }
             catch (Exception ex)
             {
@@ -33,7 +33,7 @@ namespace FamilyLedger.Api.Controllers
             try
             {
                 var session = await _supabaseClient.Auth.SignIn(request.Email, request.Password);
-                return Ok(session);
+                return Ok(new AuthResponse(session));
             }
             catch (Exception ex)
             {
@@ -52,5 +52,19 @@ namespace FamilyLedger.Api.Controllers
     {
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
+    }
+
+    public class AuthResponse
+    {
+        public string? AccessToken { get; set; }
+        public string? Email { get; set; }
+        public string? UserId { get; set; }
+
+        public AuthResponse(Supabase.Gotrue.Session? session)
+        {
+            AccessToken = session?.AccessToken;
+            Email = session?.User?.Email;
+            UserId = session?.User?.Id;
+        }
     }
 }

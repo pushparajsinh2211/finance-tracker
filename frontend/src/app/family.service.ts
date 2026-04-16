@@ -15,33 +15,29 @@ export class FamilyService {
     private authService: AuthService
   ) { }
 
-  private getHeaders(): HttpHeaders {
-    return new HttpHeaders({
-      'Authorization': `Bearer ${this.authService.getAuthToken()}`
-    });
-  }
+
 
   createFamily(name: string): Observable<any> {
-    return this.http.post(this.apiUrl, { name }, { headers: this.getHeaders() });
+    return this.http.post(this.apiUrl, { name });
   }
 
   joinFamily(inviteCode: string, displayName: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/join`, { inviteCode, displayName }, { headers: this.getHeaders() });
+    return this.http.post(`${this.apiUrl}/join`, { inviteCode, displayName });
   }
 
   getMembers(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/members`, { headers: this.getHeaders() });
+    return this.http.get<any[]>(`${this.apiUrl}/members`);
   }
 
   toggleDependent(memberId: string): Observable<any> {
-    return this.http.patch(`${this.apiUrl}/members/${memberId}/toggle`, {}, { headers: this.getHeaders() });
+    return this.http.patch(`${this.apiUrl}/members/${memberId}/toggle`, {});
   }
 
   removeMember(memberId: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/members/${memberId}`, { headers: this.getHeaders() });
+    return this.http.delete(`${this.apiUrl}/members/${memberId}`);
   }
 
   getFamilySummary(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/summary`, { headers: this.getHeaders() });
+    return this.http.get<any[]>(`${this.apiUrl}/summary`);
   }
 }
