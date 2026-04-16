@@ -12,27 +12,25 @@ export class ExpenseService {
 
   constructor(private http: HttpClient, private authService: AuthService) { }
 
-  private getHeaders() {
-    return new HttpHeaders({ 'Authorization': `Bearer ${this.authService.getAuthToken()}` });
-  }
+
 
   getExpenses(filters?: any): Observable<any[]> {
     let params: any = {};
     if (filters?.startDate) params.startDate = filters.startDate;
     if (filters?.endDate) params.endDate = filters.endDate;
     if (filters?.categoryId) params.categoryId = filters.categoryId;
-    return this.http.get<any[]>(this.apiUrl, { headers: this.getHeaders(), params });
+    return this.http.get<any[]>(this.apiUrl, { params });
   }
 
   addExpense(expense: any): Observable<any> {
-    return this.http.post(this.apiUrl, expense, { headers: this.getHeaders() });
+    return this.http.post(this.apiUrl, expense);
   }
 
   updateExpense(id: string, expense: any): Observable<any> {
-    return this.http.patch(`${this.apiUrl}/${id}`, expense, { headers: this.getHeaders() });
+    return this.http.patch(`${this.apiUrl}/${id}`, expense);
   }
 
   deleteExpense(id: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
+    return this.http.delete(`${this.apiUrl}/${id}`);
   }
 }

@@ -12,19 +12,17 @@ export class NotificationService {
 
   constructor(private http: HttpClient, private authService: AuthService) { }
 
-  private getHeaders() {
-    return new HttpHeaders({ 'Authorization': `Bearer ${this.authService.getAuthToken()}` });
-  }
+
 
   getNotifications(): Observable<any[]> {
-    return this.http.get<any[]>(this.apiUrl, { headers: this.getHeaders() });
+    return this.http.get<any[]>(this.apiUrl);
   }
 
   markAsRead(id: string): Observable<any> {
-    return this.http.patch(`${this.apiUrl}/${id}/read`, {}, { headers: this.getHeaders() });
+    return this.http.patch(`${this.apiUrl}/${id}/read`, {});
   }
 
   markAllAsRead(): Observable<any> {
-    return this.http.patch(`${this.apiUrl}/read-all`, {}, { headers: this.getHeaders() });
+    return this.http.patch(`${this.apiUrl}/read-all`, {});
   }
 }

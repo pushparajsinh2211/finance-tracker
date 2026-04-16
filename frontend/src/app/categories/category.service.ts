@@ -12,11 +12,9 @@ export class CategoryService {
 
     constructor(private http: HttpClient, private authService: AuthService) { }
 
-    private getHeaders() {
-        return new HttpHeaders({ 'Authorization': `Bearer ${this.authService.getAuthToken()}` });
-    }
+
 
     getCategories(): Observable<any[]> {
-        return this.http.get<any[]>(this.apiUrl, { headers: this.getHeaders() });
+        return this.http.get<any[]>(this.apiUrl);
     }
 }
