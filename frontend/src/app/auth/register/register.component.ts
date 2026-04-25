@@ -42,7 +42,7 @@ export class RegisterComponent {
       error: (err) => {
         this.isLoading = false;
         const errorBody = err.error;
-        this.errorMessage = errorBody?.message || errorBody?.Message || (typeof errorBody === 'string' ? errorBody : 'Registration failed.');
+        this.errorMessage = errorBody?.message || errorBody?.Message || errorBody?.msg || (typeof errorBody === 'string' ? errorBody : 'Registration failed.');
       }
     });
   }
