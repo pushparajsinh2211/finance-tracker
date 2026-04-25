@@ -69,7 +69,7 @@ export class OnboardingComponent implements OnInit {
       error: (err) => {
         this.isLoading = false;
         const errorBody = err.error;
-        this.errorMsg = errorBody?.message || errorBody?.Message || (typeof errorBody === 'string' ? errorBody : 'Failed to create family.');
+        this.errorMsg = errorBody?.message || errorBody?.Message || errorBody?.msg || (typeof errorBody === 'string' ? errorBody : 'Failed to create family.');
       }
     });
   }
@@ -89,7 +89,7 @@ export class OnboardingComponent implements OnInit {
       error: (err) => {
         this.isLoading = false;
         const errorBody = err.error;
-        this.errorMsg = errorBody?.message || errorBody?.Message || (typeof errorBody === 'string' ? errorBody : 'Failed to join family.');
+        this.errorMsg = errorBody?.message || errorBody?.Message || errorBody?.msg || (typeof errorBody === 'string' ? errorBody : 'Failed to join family.');
       }
     });
   }
