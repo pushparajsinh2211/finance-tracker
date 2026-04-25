@@ -40,7 +40,8 @@ export class LoginComponent {
       },
       error: (err) => {
         this.isLoading = false;
-        this.errorMessage = err.error?.message || 'Login failed. Please check your credentials.';
+        const errorBody = err.error;
+        this.errorMessage = errorBody?.message || errorBody?.Message || (typeof errorBody === 'string' ? errorBody : 'Login failed. Please check your credentials.');
       }
     });
   }

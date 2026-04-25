@@ -43,7 +43,11 @@ export class OnboardingComponent implements OnInit {
           this.router.navigate(['/dashboard']);
         }
       },
-      error: () => { }
+      error: (err) => { 
+        if (err.status === 401) {
+          this.router.navigate(['/login']);
+        }
+      }
     });
   }
 
@@ -64,7 +68,8 @@ export class OnboardingComponent implements OnInit {
       },
       error: (err) => {
         this.isLoading = false;
-        this.errorMsg = err.error?.message || 'Failed to create family.';
+        const errorBody = err.error;
+        this.errorMsg = errorBody?.message || errorBody?.Message || (typeof errorBody === 'string' ? errorBody : 'Failed to create family.');
       }
     });
   }
@@ -83,7 +88,8 @@ export class OnboardingComponent implements OnInit {
       },
       error: (err) => {
         this.isLoading = false;
-        this.errorMsg = err.error?.message || 'Failed to join family.';
+        const errorBody = err.error;
+        this.errorMsg = errorBody?.message || errorBody?.Message || (typeof errorBody === 'string' ? errorBody : 'Failed to join family.');
       }
     });
   }
