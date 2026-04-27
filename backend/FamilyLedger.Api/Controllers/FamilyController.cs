@@ -239,6 +239,7 @@ namespace FamilyLedger.Api.Controllers
             {
                 return BadRequest(new { Message = ex.Message });
             }
+        }
         [HttpPost("invite")]
         public async Task<IActionResult> InviteMember([FromBody] InviteMemberRequest request)
         {
