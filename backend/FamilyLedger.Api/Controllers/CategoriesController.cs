@@ -40,7 +40,16 @@ namespace FamilyLedger.Api.Controllers
             try
             {
                 var response = await GetPostgrestClient().Table<Category>().Get();
-                return Ok(response.Models.OrderBy(c => c.Name));
+                var dtos = response.Models.Select(c => new CategoryDto
+                {
+                    Id = c.Id,
+                    FamilyId = c.FamilyId,
+                    Name = c.Name,
+                    Color = c.Color,
+                    IsDefault = c.IsDefault
+                }).OrderBy(c => c.Name).ToList();
+                
+                return Ok(dtos);
             }
             catch (Exception ex)
             {
@@ -62,7 +71,18 @@ namespace FamilyLedger.Api.Controllers
                     IsArchived = false
                 };
                 var response = await GetPostgrestClient().Table<Category>().Insert(newCat);
-                return Ok(response.Models.FirstOrDefault());
+                var created = response.Models.FirstOrDefault();
+                
+                if (created == null) return BadRequest();
+
+                return Ok(new CategoryDto
+                {
+                    Id = created.Id,
+                    FamilyId = created.FamilyId,
+                    Name = created.Name,
+                    Color = created.Color,
+                    IsDefault = created.IsDefault
+                });
             }
             catch (Exception ex)
             {
@@ -85,8 +105,16 @@ namespace FamilyLedger.Api.Controllers
                 if (request.Color != null) cat.Color = request.Color;
                 if (request.IsArchived.HasValue) cat.IsArchived = request.IsArchived.Value;
 
-                var updateResponse = await postgrest.Table<Category>().Update(cat);
-                return Ok(updateResponse.Models.FirstOrDefault());
+                await postgrest.Table<Category>().Update(cat);
+                
+                return Ok(new CategoryDto
+                {
+                    Id = cat.Id,
+                    FamilyId = cat.FamilyId,
+                    Name = cat.Name,
+                    Color = cat.Color,
+                    IsDefault = cat.IsDefault
+                });
             }
             catch (Exception ex)
             {

@@ -44,7 +44,17 @@ namespace FamilyLedger.Api.Controllers
                 var response = await postgrest.Table<Notification>()
                     .Order("created_at", Postgrest.Constants.Ordering.Descending)
                     .Get();
-                return Ok(response.Models);
+                
+                var dtos = response.Models.Select(n => new NotificationDto
+                {
+                    Id = n.Id,
+                    UserId = n.UserId,
+                    Message = n.Message,
+                    IsRead = n.IsRead,
+                    CreatedAt = n.CreatedAt
+                }).ToList();
+
+                return Ok(dtos);
             }
             catch (Exception ex)
             {
@@ -64,8 +74,16 @@ namespace FamilyLedger.Api.Controllers
                 if (notif == null) return NotFound(new { Message = "Notification not found" });
 
                 notif.IsRead = true;
-                var updateResponse = await postgrest.Table<Notification>().Update(notif);
-                return Ok(updateResponse.Models.FirstOrDefault());
+                await postgrest.Table<Notification>().Update(notif);
+                
+                return Ok(new NotificationDto
+                {
+                    Id = notif.Id,
+                    UserId = notif.UserId,
+                    Message = notif.Message,
+                    IsRead = notif.IsRead,
+                    CreatedAt = notif.CreatedAt
+                });
             }
             catch (Exception ex)
             {

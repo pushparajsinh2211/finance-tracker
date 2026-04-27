@@ -150,7 +150,17 @@ namespace FamilyLedger.Api.Controllers
                 if (membership == null) return NotFound(new { Message = "User is not a member of any family." });
 
                 var familyResp = await postgrest.Table<Family>().Where(f => f.Id == membership.FamilyId).Get();
-                return Ok(familyResp.Models.FirstOrDefault());
+                var family = familyResp.Models.FirstOrDefault();
+                
+                if (family == null) return NotFound();
+
+                return Ok(new FamilyDto 
+                { 
+                    Id = family.Id, 
+                    Name = family.Name, 
+                    InviteCode = family.InviteCode, 
+                    HeadUserId = family.HeadUserId 
+                });
             }
             catch (Exception ex)
             {
@@ -165,7 +175,18 @@ namespace FamilyLedger.Api.Controllers
             {
                 var postgrest = GetPostgrestClient();
                 var response = await postgrest.Table<FamilyMember>().Get();
-                return Ok(response.Models);
+                
+                var dtos = response.Models.Select(m => new FamilyMemberDto
+                {
+                    Id = m.Id,
+                    FamilyId = m.FamilyId,
+                    UserId = m.UserId,
+                    DisplayName = m.DisplayName,
+                    Relation = m.Relation,
+                    IsDependent = m.IsDependent
+                }).ToList();
+
+                return Ok(dtos);
             }
             catch (Exception ex)
             {
@@ -185,9 +206,17 @@ namespace FamilyLedger.Api.Controllers
                 if (member == null) return NotFound(new { Message = "Member not found." });
 
                 member.IsDependent = !member.IsDependent;
-                var updateResponse = await postgrest.Table<FamilyMember>().Update(member);
+                await postgrest.Table<FamilyMember>().Update(member);
 
-                return Ok(updateResponse.Models.FirstOrDefault());
+                return Ok(new FamilyMemberDto
+                {
+                    Id = member.Id,
+                    FamilyId = member.FamilyId,
+                    UserId = member.UserId,
+                    DisplayName = member.DisplayName,
+                    Relation = member.Relation,
+                    IsDependent = member.IsDependent
+                });
             }
             catch (Exception ex)
             {

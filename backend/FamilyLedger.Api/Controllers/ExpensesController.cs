@@ -54,7 +54,18 @@ namespace FamilyLedger.Api.Controllers
                     query = query.Filter("category_id", Postgrest.Constants.Operator.Equals, categoryId.Value.ToString());
 
                 var response = await query.Get();
-                return Ok(response.Models.OrderByDescending(e => e.Date));
+                var dtos = response.Models.Select(e => new ExpenseDto
+                {
+                    Id = e.Id,
+                    FamilyId = e.FamilyId,
+                    CategoryId = e.CategoryId,
+                    MemberUserId = e.UserId,
+                    Amount = e.Amount,
+                    Note = e.Note ?? string.Empty,
+                    Date = e.Date
+                }).OrderByDescending(e => e.Date).ToList();
+
+                return Ok(dtos);
             }
             catch (Exception ex)
             {
@@ -93,7 +104,20 @@ namespace FamilyLedger.Api.Controllers
                 };
 
                 var response = await postgrest.Table<Expense>().Insert(newExpense);
-                return Ok(response.Models.FirstOrDefault());
+                var created = response.Models.FirstOrDefault();
+
+                if (created == null) return BadRequest();
+
+                return Ok(new ExpenseDto
+                {
+                    Id = created.Id,
+                    FamilyId = created.FamilyId,
+                    CategoryId = created.CategoryId,
+                    MemberUserId = created.UserId,
+                    Amount = created.Amount,
+                    Note = created.Note ?? string.Empty,
+                    Date = created.Date
+                });
             }
             catch (Exception ex)
             {
@@ -120,8 +144,18 @@ namespace FamilyLedger.Api.Controllers
                 if (request.IsRecurring.HasValue) expense.IsRecurring = request.IsRecurring.Value;
                 if (request.ReceiptUrl != null) expense.ReceiptUrl = request.ReceiptUrl;
 
-                var updateResponse = await postgrest.Table<Expense>().Update(expense);
-                return Ok(updateResponse.Models.FirstOrDefault());
+                await postgrest.Table<Expense>().Update(expense);
+                
+                return Ok(new ExpenseDto
+                {
+                    Id = expense.Id,
+                    FamilyId = expense.FamilyId,
+                    CategoryId = expense.CategoryId,
+                    MemberUserId = expense.UserId,
+                    Amount = expense.Amount,
+                    Note = expense.Note ?? string.Empty,
+                    Date = expense.Date
+                });
             }
             catch (Exception ex)
             {
