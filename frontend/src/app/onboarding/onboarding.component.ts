@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { FamilyService } from '../family.service';
+import { AuthService } from '../auth/auth.service';
 
 @Component({
   selector: 'app-onboarding',
@@ -23,6 +24,7 @@ export class OnboardingComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private familyService: FamilyService,
+    public authService: AuthService,
     private router: Router
   ) {
     this.createForm = this.fb.group({
@@ -92,5 +94,21 @@ export class OnboardingComponent implements OnInit {
         this.errorMsg = errorBody?.message || errorBody?.Message || errorBody?.msg || (typeof errorBody === 'string' ? errorBody : 'Failed to join family.');
       }
     });
+  }
+
+  get userEmail(): string {
+    const token = this.authService.getAuthToken();
+    if (!token) return 'User';
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.email || 'User';
+    } catch {
+      return 'User';
+    }
+  }
+
+  logout() {
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 }

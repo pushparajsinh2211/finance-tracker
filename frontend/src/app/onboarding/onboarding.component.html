@@ -66,5 +66,11 @@
             </form>
         </div>
 
+        <div style="margin-top: 2rem; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1.5rem;">
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">Logged in as {{ userEmail }}</p>
+            <button (click)="logout()" style="background: none; border: none; color: var(--secondary); cursor: pointer; text-decoration: underline; font-size: 0.9rem;">
+                Sign Out
+            </button>
+        </div>
     </div>
 </div>

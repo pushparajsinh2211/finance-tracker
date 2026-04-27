@@ -17,6 +17,7 @@ export class FamilyViewComponent implements OnInit {
   summary: any[] = [];
   categories: any[] = [];
   members: any[] = [];
+  family: any = null;
   isLoading = true;
   errorMsg = '';
 
@@ -33,21 +34,43 @@ export class FamilyViewComponent implements OnInit {
   async loadData() {
     this.isLoading = true;
     try {
-      const [membersRes, catsRes, summaryRes] = await Promise.all([
+      const [membersRes, catsRes, summaryRes, familyRes] = await Promise.all([
         firstValueFrom(this.familyService.getMembers()),
         firstValueFrom(this.categoryService.getCategories()),
-        firstValueFrom(this.familyService.getFamilySummary())
+        firstValueFrom(this.familyService.getFamilySummary()),
+        firstValueFrom(this.familyService.getFamily())
       ]);
 
       this.members = membersRes || [];
       this.categories = catsRes || [];
       this.summary = summaryRes || [];
+      this.family = familyRes;
     } catch (err: any) {
       console.error(err);
-      this.errorMsg = err.error?.message || "Failed to load summary. You must be the Family Head.";
+      this.errorMsg = err.error?.message || "Failed to load family details.";
     } finally {
       this.isLoading = false;
     }
+  }
+
+  toggleDependent(memberId: string) {
+    this.familyService.toggleDependent(memberId).subscribe({
+      next: () => this.loadData(),
+      error: (err) => alert(err.error?.message || "Failed to update member.")
+    });
+  }
+
+  removeMember(memberId: string) {
+    if (!confirm("Are you sure you want to remove this member?")) return;
+    this.familyService.removeMember(memberId).subscribe({
+      next: () => this.loadData(),
+      error: (err) => alert(err.error?.message || "Failed to remove member.")
+    });
+  }
+
+  get isHead(): boolean {
+    const userId = this.authService.getAuthToken() ? JSON.parse(atob(this.authService.getAuthToken()!.split('.')[1])).sub : '';
+    return this.family?.headUserId === userId;
   }
 
   getMemberName(id: string) {

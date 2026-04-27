@@ -134,6 +134,30 @@ namespace FamilyLedger.Api.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetFamily()
+        {
+            try
+            {
+                var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+                if (string.IsNullOrEmpty(userIdString) || !Guid.TryParse(userIdString, out var userId))
+                    return Unauthorized("User ID not found.");
+
+                var postgrest = GetPostgrestClient();
+                var fmResp = await postgrest.Table<FamilyMember>().Where(f => f.UserId == userId).Get();
+                var membership = fmResp.Models.FirstOrDefault();
+
+                if (membership == null) return NotFound(new { Message = "User is not a member of any family." });
+
+                var familyResp = await postgrest.Table<Family>().Where(f => f.Id == membership.FamilyId).Get();
+                return Ok(familyResp.Models.FirstOrDefault());
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
         [HttpGet("members")]
         public async Task<IActionResult> GetMembers()
         {

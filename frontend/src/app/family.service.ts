@@ -25,6 +25,10 @@ export class FamilyService {
     return this.http.post(`${this.apiUrl}/join`, { inviteCode, displayName });
   }
 
+  getFamily(): Observable<any> {
+    return this.http.get<any>(this.apiUrl);
+  }
+
   getMembers(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/members`);
   }

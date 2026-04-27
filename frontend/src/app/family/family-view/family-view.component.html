@@ -2,8 +2,16 @@
     <app-top-nav></app-top-nav>
 
     <main class="dashboard-content container">
-        <header class="page-header">
-            <h1>Aggregated Dependents Summary</h1>
+        <header class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <h1 style="margin-bottom: 0.25rem;">Family Management</h1>
+                <p style="color: var(--text-muted);">{{ family?.name || 'Loading...' }}</p>
+            </div>
+            <div *ngIf="isHead" class="glass-panel" style="padding: 1rem; text-align: right; border-radius: var(--radius-md);">
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Invite Code</div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary); letter-spacing: 0.1em;">{{ family?.inviteCode }}</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.25rem;">Share this with your family members</div>
+            </div>
         </header>
 
         <div *ngIf="errorMsg" class="alert-error" style="margin-bottom: 2rem;">
@@ -15,29 +23,63 @@
         </div>
 
         <div *ngIf="!isLoading && !errorMsg">
-            <div *ngIf="summary.length === 0" class="card" style="padding: var(--space-12); text-align: center;">
-                <p>No dependent expenses recorded yet.</p>
-            </div>
+            
+            <!-- Members List Section -->
+            <section style="margin-bottom: 3rem;">
+                <h2 style="font-size: 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 1.5rem;">👥</span> Family Members
+                </h2>
+                <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+                    <div class="card" *ngFor="let m of members" style="margin-bottom: 0; position: relative;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <h3 style="margin-bottom: 0.25rem; color: var(--text-main);">{{ m.displayName }}</h3>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">{{ m.relation || 'Member' }}</div>
+                            </div>
+                            <span [class]="m.relation === 'Head' ? 'category-badge' : 'badge'" 
+                                  [style.backgroundColor]="m.relation === 'Head' ? 'var(--primary)33' : 'rgba(255,255,255,0.05)'"
+                                  [style.color]="m.relation === 'Head' ? 'var(--primary)' : 'var(--text-muted)'">
+                                {{ m.relation === 'Head' ? 'Head' : 'Member' }}
+                            </span>
+                        </div>
 
-            <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
-                <div class="card" *ngFor="let item of summary"
-                    style="margin-bottom: 0; border-top: 4px solid var(--primary);">
-
-                    <h3 style="margin-bottom: 0.5rem; color: var(--text-main);">{{ getMemberName(item.member_user_id) }}
-                    </h3>
-
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
-                        <span class="category-badge" [style.backgroundColor]="getCategoryColor(item.category_id) + '33'"
-                            [style.color]="getCategoryColor(item.category_id)">
-                            {{ getCategoryName(item.category_id) }}
-                        </span>
-                        <span style="font-size: 1.25rem; font-weight: 600; color: var(--text-main);">₹{{
-                            item.total_amount |
-                            number:'1.0-0' }}</span>
+                        <div style="margin-top: 1.5rem; display: flex; gap: 0.75rem; align-items: center;">
+                            <div style="flex: 1; display: flex; align-items: center; gap: 0.5rem;">
+                                <label class="switch" style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem; color: var(--text-muted);">
+                                    <input type="checkbox" [checked]="m.isDependent" (change)="toggleDependent(m.id)" [disabled]="!isHead || m.relation === 'Head'">
+                                    Dependent
+                                </label>
+                            </div>
+                            <button *ngIf="isHead && m.relation !== 'Head'" (click)="removeMember(m.id)" 
+                                    style="background: none; border: none; color: var(--secondary); cursor: pointer; font-size: 0.8rem; padding: 0.25rem;">
+                                Remove
+                            </button>
+                        </div>
                     </div>
-
                 </div>
-            </div>
+            </section>
+
+            <!-- Aggregated Summary Section -->
+            <section>
+                <h2 style="font-size: 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 1.5rem;">📊</span> Dependent Expenses Summary
+                </h2>
+                <div *ngIf="summary.length === 0" class="card" style="padding: 3rem; text-align: center; color: var(--text-muted);">
+                    <p>No dependent expenses recorded yet.</p>
+                </div>
+
+                <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
+                    <div class="card" *ngFor="let item of summary" style="margin-bottom: 0; border-top: 4px solid var(--primary);">
+                        <h3 style="margin-bottom: 0.5rem; color: var(--text-main);">{{ getMemberName(item.member_user_id) }}</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+                            <span class="category-badge" [style.backgroundColor]="getCategoryColor(item.category_id) + '33'" [style.color]="getCategoryColor(item.category_id)">
+                                {{ getCategoryName(item.category_id) }}
+                            </span>
+                            <span style="font-size: 1.25rem; font-weight: 600; color: var(--text-main);">₹{{ item.total_amount | number:'1.0-0' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
     </main>
 </div>
