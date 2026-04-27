@@ -25,22 +25,19 @@ builder.Services.AddScoped<Supabase.Client>(_ =>
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        // Use Authority - this is the standard way to handle OIDC/Supabase
+        // Authority must point to the issuer exactly
         options.Authority = $"{supabaseUrl}/auth/v1";
-        options.RequireHttpsMetadata = false; // Helps if Render's proxy is causing issues
+        options.Audience = "authenticated";
         
+        // Explicitly set the discovery document path for Supabase
+        options.MetadataAddress = $"{supabaseUrl}/auth/v1/.well-known/openid-configuration";
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuerSigningKey = true,
-            
-            // Explicitly set the Issuer to match Supabase exactly
-            ValidIssuer = $"{supabaseUrl}/auth/v1",
             ValidateIssuer = true,
-            
-            // Supabase tokens always use "authenticated" as audience
-            ValidAudience = "authenticated",
+            ValidIssuer = $"{supabaseUrl}/auth/v1",
             ValidateAudience = true,
-            
+            ValidAudience = "authenticated",
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
         };
