@@ -17,6 +17,9 @@ export class OnboardingComponent implements OnInit {
   joinForm: FormGroup;
 
   isLoading = false;
+  showSuccess = false;
+  createdFamilyName = '';
+  inviteCode = '';
   errorMsg = '';
 
   activeTab: 'create' | 'join' = 'create';
@@ -64,9 +67,11 @@ export class OnboardingComponent implements OnInit {
     this.errorMsg = '';
 
     this.familyService.createFamily(this.createForm.value.name).subscribe({
-      next: () => {
+      next: (family) => {
         this.isLoading = false;
-        this.router.navigate(['/dashboard']);
+        this.createdFamilyName = family.name;
+        this.inviteCode = family.inviteCode;
+        this.showSuccess = true;
       },
       error: (err) => {
         this.isLoading = false;
@@ -110,5 +115,15 @@ export class OnboardingComponent implements OnInit {
   logout() {
     this.authService.logout();
     this.router.navigate(['/login']);
+  }
+
+  copyInviteCode() {
+    navigator.clipboard.writeText(this.inviteCode).then(() => {
+      alert('Invite code copied to clipboard!');
+    });
+  }
+
+  continueToDashboard() {
+    this.router.navigate(['/dashboard']);
   }
 }

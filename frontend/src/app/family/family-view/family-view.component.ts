@@ -7,10 +7,12 @@ import { AuthService } from '../../auth/auth.service';
 import { firstValueFrom } from 'rxjs';
 import { TopNavComponent } from '../../ui/top-nav/top-nav.component';
 
+import { FormsModule } from '@angular/forms';
+
 @Component({
   selector: 'app-family-view',
   standalone: true,
-  imports: [CommonModule, RouterModule, TopNavComponent],
+  imports: [CommonModule, RouterModule, TopNavComponent, FormsModule],
   templateUrl: './family-view.component.html'
 })
 export class FamilyViewComponent implements OnInit {
@@ -20,6 +22,10 @@ export class FamilyViewComponent implements OnInit {
   family: any = null;
   isLoading = true;
   errorMsg = '';
+  
+  showInviteModal = false;
+  inviteEmail = '';
+  isInviting = false;
 
   constructor(
     private familyService: FamilyService,
@@ -65,6 +71,32 @@ export class FamilyViewComponent implements OnInit {
     this.familyService.removeMember(memberId).subscribe({
       next: () => this.loadData(),
       error: (err) => alert(err.error?.message || "Failed to remove member.")
+    });
+  }
+
+  openInviteModal() {
+    this.showInviteModal = true;
+    this.inviteEmail = '';
+  }
+
+  closeInviteModal() {
+    this.showInviteModal = false;
+  }
+
+  sendInvite() {
+    if (!this.inviteEmail) return;
+    this.isInviting = true;
+    
+    this.familyService.sendInvite(this.inviteEmail).subscribe({
+      next: (res) => {
+        this.isInviting = false;
+        this.showInviteModal = false;
+        alert(res.message || res.Message || `Invitation sent to ${this.inviteEmail}!`);
+      },
+      error: (err) => {
+        this.isInviting = false;
+        alert(err.error?.message || "Failed to send invitation.");
+      }
     });
   }
 

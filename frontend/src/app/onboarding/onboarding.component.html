@@ -2,75 +2,98 @@
     <div class="glass-panel auth-panel" style="max-width: 500px;">
         <div class="auth-header" style="margin-bottom: 1.5rem;">
             <div class="logo">FamilyLedger</div>
-            <h2>Get Started</h2>
-            <p>Set up your family environment to begin tracking expenses.</p>
+            <h2 *ngIf="!showSuccess">Get Started</h2>
+            <h2 *ngIf="showSuccess">Family Created!</h2>
+            <p *ngIf="!showSuccess">Set up your family environment to begin tracking expenses.</p>
+            <p *ngIf="showSuccess">Welcome to <strong>{{ createdFamilyName }}</strong>.</p>
         </div>
 
-        <div class="tabs">
-            <button class="tab-btn" [class.active]="activeTab === 'create'" (click)="setTab('create')">
-                Create Family
-            </button>
-            <button class="tab-btn" [class.active]="activeTab === 'join'" (click)="setTab('join')">
-                Join Family
-            </button>
-        </div>
-
-        <div class="alert-error" *ngIf="errorMsg">
-            {{ errorMsg }}
-        </div>
-
-        <!-- CREATE FORM -->
-        <div *ngIf="activeTab === 'create'" class="animate-fade-in">
-            <form [formGroup]="createForm" (ngSubmit)="onCreate()">
-                <div class="form-group">
-                    <label class="form-label">Family Name</label>
-                    <input type="text" class="form-control" formControlName="name" placeholder="e.g. The Patel Family">
-                    <div class="text-danger" *ngIf="createForm.get('name')?.touched && createForm.get('name')?.invalid">
-                        Name must be at least 2 characters.
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-primary btn-block" [disabled]="createForm.invalid || isLoading">
-                    <span *ngIf="!isLoading">Create & Invite</span>
-                    <span *ngIf="isLoading" class="spinner"></span>
+        <!-- SUCCESS VIEW -->
+        <div *ngIf="showSuccess" class="animate-fade-in" style="text-align: center; padding: 1rem 0;">
+            <div class="alert-success" style="margin-bottom: 2rem;">
+                Successfully created your family environment.
+            </div>
+            
+            <div style="background: rgba(0,0,0,0.03); padding: 2rem; border-radius: var(--radius-lg); margin-bottom: 2rem; border: 1px dashed var(--border-strong);">
+                <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem;">Share this Invite Code</div>
+                <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary); letter-spacing: 0.15em; margin-bottom: 1rem;">{{ inviteCode }}</div>
+                <button (click)="copyInviteCode()" class="btn btn-secondary">
+                    <span>📋 Copy Code</span>
                 </button>
-            </form>
+            </div>
+
+            <button (click)="continueToDashboard()" class="btn btn-primary btn-block">
+                Continue to Dashboard
+            </button>
         </div>
 
-        <!-- JOIN FORM -->
-        <div *ngIf="activeTab === 'join'" class="animate-fade-in">
-            <form [formGroup]="joinForm" (ngSubmit)="onJoin()">
-                <div class="form-group">
-                    <label class="form-label">Invite Code</label>
-                    <input type="text" class="form-control" formControlName="inviteCode" placeholder="8-character code"
-                        maxlength="8">
-                    <div class="text-danger"
-                        *ngIf="joinForm.get('inviteCode')?.touched && joinForm.get('inviteCode')?.invalid">
-                        Valid 8-character invite code is required.
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Your Name</label>
-                    <input type="text" class="form-control" formControlName="displayName" placeholder="e.g. Raj">
-                    <div class="text-danger"
-                        *ngIf="joinForm.get('displayName')?.touched && joinForm.get('displayName')?.invalid">
-                        Name is required.
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-primary btn-block" [disabled]="joinForm.invalid || isLoading">
-                    <span *ngIf="!isLoading">Join Family</span>
-                    <span *ngIf="isLoading" class="spinner"></span>
+        <div *ngIf="!showSuccess">
+            <div class="tabs">
+                <button class="tab-btn" [class.active]="activeTab === 'create'" (click)="setTab('create')">
+                    Create Family
                 </button>
-            </form>
+                <button class="tab-btn" [class.active]="activeTab === 'join'" (click)="setTab('join')">
+                    Join Family
+                </button>
+            </div>
+
+            <div class="alert-error" *ngIf="errorMsg">
+                {{ errorMsg }}
+            </div>
+
+            <!-- CREATE FORM -->
+            <div *ngIf="activeTab === 'create'" class="animate-fade-in">
+                <form [formGroup]="createForm" (ngSubmit)="onCreate()">
+                    <div class="form-group">
+                        <label class="form-label">Family Name</label>
+                        <input type="text" class="form-control" formControlName="name" placeholder="e.g. The Patel Family">
+                        <div class="text-danger" *ngIf="createForm.get('name')?.touched && createForm.get('name')?.invalid">
+                            Name must be at least 2 characters.
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block" [disabled]="createForm.invalid || isLoading">
+                        <span *ngIf="!isLoading">Create & Invite</span>
+                        <span *ngIf="isLoading" class="spinner"></span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- JOIN FORM -->
+            <div *ngIf="activeTab === 'join'" class="animate-fade-in">
+                <form [formGroup]="joinForm" (ngSubmit)="onJoin()">
+                    <div class="form-group">
+                        <label class="form-label">Invite Code</label>
+                        <input type="text" class="form-control" formControlName="inviteCode" placeholder="8-character code"
+                            maxlength="8">
+                        <div class="text-danger"
+                            *ngIf="joinForm.get('inviteCode')?.touched && joinForm.get('inviteCode')?.invalid">
+                            Valid 8-character invite code is required.
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Your Name</label>
+                        <input type="text" class="form-control" formControlName="displayName" placeholder="e.g. Raj">
+                        <div class="text-danger"
+                            *ngIf="joinForm.get('displayName')?.touched && joinForm.get('displayName')?.invalid">
+                            Name is required.
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block" [disabled]="joinForm.invalid || isLoading">
+                        <span *ngIf="!isLoading">Join Family</span>
+                        <span *ngIf="isLoading" class="spinner"></span>
+                    </button>
+                </form>
+            </div>
         </div>
 
-        <div style="margin-top: 2rem; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1.5rem;">
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">Logged in as {{ userEmail }}</p>
-            <button (click)="logout()" style="background: none; border: none; color: var(--secondary); cursor: pointer; text-decoration: underline; font-size: 0.9rem;">
+        <div style="margin-top: 3rem; text-align: center; border-top: 1px solid var(--border-subtle); padding-top: 2rem;">
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Logged in as <strong>{{ userEmail }}</strong></p>
+            <button (click)="logout()" class="btn btn-secondary" style="height: 32px; font-size: 0.75rem; border-color: transparent; background: transparent;">
                 Sign Out
             </button>
         </div>
     </div>
-</div>
+</div>

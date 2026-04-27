@@ -41,6 +41,10 @@ export class FamilyService {
     return this.http.delete(`${this.apiUrl}/members/${memberId}`);
   }
 
+  sendInvite(email: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/invite`, { email });
+  }
+
   getFamilySummary(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/summary`);
   }

@@ -4,8 +4,13 @@
     <main class="dashboard-content container">
         <header class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
-                <h1 style="margin-bottom: 0.25rem;">Family Management</h1>
-                <p style="color: var(--text-muted);">{{ family?.name || 'Loading...' }}</p>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <h1 style="margin-bottom: 0;">Family Management</h1>
+                    <button *ngIf="isHead" (click)="openInviteModal()" class="btn btn-primary" style="height: 32px; font-size: 0.8rem; padding: 0 0.75rem;">
+                        + Add Member
+                    </button>
+                </div>
+                <p style="color: var(--text-muted); margin-top: 0.25rem;">{{ family?.name || 'Loading...' }}</p>
             </div>
             <div *ngIf="isHead" class="glass-panel" style="padding: 1rem; text-align: right; border-radius: var(--radius-md);">
                 <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Invite Code</div>
@@ -82,4 +87,32 @@
             </section>
         </div>
     </main>
+</div>
+
+<!-- Invite Member Modal -->
+<div class="modal-overlay animate-fade-in" *ngIf="showInviteModal">
+    <div class="card" style="max-width: 400px; width: 100%;">
+        <div class="card-header">
+            <h3 style="margin: 0;">Invite via Email</h3>
+            <button (click)="closeInviteModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); line-height: 1;">&times;</button>
+        </div>
+        
+        <div style="padding: 1rem 0;">
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+                Send an invitation to join <strong>{{ family?.name }}</strong>. They will receive the invite code via email.
+            </p>
+
+            <div class="form-group">
+                <label class="form-label">Member's Email Address</label>
+                <input type="email" class="form-control" [(ngModel)]="inviteEmail" placeholder="e.g. raj@example.com" style="width: 100%;">
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <button (click)="sendInvite()" class="btn btn-primary" style="flex: 1;" [disabled]="!inviteEmail || isInviting">
+                    <span *ngIf="!isInviting">Send Invitation</span>
+                    <span *ngIf="isInviting" class="spinner"></span>
+                </button>
+            </div>
+        </div>
+    </div>
 </div>

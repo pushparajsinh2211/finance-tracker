@@ -239,7 +239,46 @@ namespace FamilyLedger.Api.Controllers
             {
                 return BadRequest(new { Message = ex.Message });
             }
+        [HttpPost("invite")]
+        public async Task<IActionResult> InviteMember([FromBody] InviteMemberRequest request)
+        {
+            try
+            {
+                var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+                if (string.IsNullOrEmpty(userIdString) || !Guid.TryParse(userIdString, out var userId))
+                    return Unauthorized("User ID not found.");
+
+                var postgrest = GetPostgrestClient();
+                
+                // 1. Verify the current user is the head of the family
+                var fmResp = await postgrest.Table<FamilyMember>().Where(f => f.UserId == userId).Get();
+                var membership = fmResp.Models.FirstOrDefault();
+
+                if (membership == null || membership.Relation != "Head")
+                    return Unauthorized(new { Message = "Only the Family Head can send invitations." });
+
+                var familyResp = await postgrest.Table<Family>().Where(f => f.Id == membership.FamilyId).Get();
+                var family = familyResp.Models.FirstOrDefault();
+
+                if (family == null) return NotFound("Family not found.");
+
+                // 2. Logic for sending the invitation
+                // Note: In a production app, you would integrate an Email Service (SendGrid/Postmark) here.
+                // For now, we simulate the success and log it.
+                Console.WriteLine($"[INVITE] Sending family invite for '{family.Name}' (Code: {family.InviteCode}) to {request.Email}");
+
+                return Ok(new { Message = $"Invitation sent successfully to {request.Email}!" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
         }
+    }
+
+    public class InviteMemberRequest
+    {
+        public string Email { get; set; } = string.Empty;
     }
 
     public class CreateFamilyRequest
