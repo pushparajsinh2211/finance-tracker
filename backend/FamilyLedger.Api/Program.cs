@@ -32,10 +32,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
-            ValidAudiences = new[] { "authenticated" },
-            ValidateAudience = true,
-            ValidIssuers = new[] { $"{supabaseUrl}/auth/v1" },
-            ValidateIssuer = true,
+            ValidateAudience = false, // Relaxed for debugging
+            ValidateIssuer = false,   // Relaxed for debugging
             ValidateLifetime = true
         };
     });

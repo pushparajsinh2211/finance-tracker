@@ -19,6 +19,10 @@ namespace FamilyLedger.Api.Controllers
             try
             {
                 var session = await _supabaseClient.Auth.SignUp(request.Email, request.Password);
+                if (session == null || string.IsNullOrEmpty(session?.AccessToken))
+                {
+                    return BadRequest(new { Message = "User created, but no login session started. Action Required: Please confirm your email or disable 'Confirm Email' in Supabase Authentication settings." });
+                }
                 return Ok(new AuthResponse(session));
             }
             catch (Exception ex)
@@ -33,6 +37,10 @@ namespace FamilyLedger.Api.Controllers
             try
             {
                 var session = await _supabaseClient.Auth.SignIn(request.Email, request.Password);
+                if (session == null || string.IsNullOrEmpty(session?.AccessToken))
+                {
+                    return Unauthorized(new { Message = "Login failed: No access token returned. Ensure your email is confirmed." });
+                }
                 return Ok(new AuthResponse(session));
             }
             catch (Exception ex)
