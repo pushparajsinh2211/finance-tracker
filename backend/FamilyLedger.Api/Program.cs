@@ -25,17 +25,42 @@ builder.Services.AddScoped<Supabase.Client>(_ =>
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        // This allows .NET to automatically fetch the public keys from Supabase
-        options.MetadataAddress = $"{supabaseUrl}/auth/v1/jwks";
+        // Use Authority - this is the standard way to handle OIDC/Supabase
+        options.Authority = $"{supabaseUrl}/auth/v1";
+        options.RequireHttpsMetadata = false; // Helps if Render's proxy is causing issues
         
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
+            
+            // Explicitly set the Issuer to match Supabase exactly
             ValidIssuer = $"{supabaseUrl}/auth/v1",
             ValidateIssuer = true,
+            
+            // Supabase tokens always use "authenticated" as audience
             ValidAudience = "authenticated",
             ValidateAudience = true,
-            ValidateLifetime = true
+            
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                // This will give us more detail in the Render logs
+                Console.WriteLine($"JWT Auth Failed. Error: {context.Exception.Message}");
+                if (context.Exception.InnerException != null)
+                {
+                    Console.WriteLine($"Inner Error: {context.Exception.InnerException.Message}");
+                }
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                Console.WriteLine("JWT Token Validated Successfully!");
+                return Task.CompletedTask;
+            }
         };
     });
 
