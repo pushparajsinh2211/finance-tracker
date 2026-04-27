@@ -102,16 +102,22 @@ ALTER TABLE public.savings_goals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.emis ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
+-- Helper function to fetch user's family ID without triggering RLS recursion
+CREATE OR REPLACE FUNCTION public.get_my_family_id()
+RETURNS UUID AS $$
+    SELECT family_id FROM public.family_members WHERE user_id = auth.uid() LIMIT 1;
+$$ LANGUAGE sql SECURITY DEFINER SET search_path = public;
+
 -- Families: head can view entirely, members can view their family
 CREATE POLICY "Families are viewable by members" ON public.families FOR SELECT
-    USING (id IN (SELECT family_id FROM public.family_members WHERE user_id = auth.uid()) OR head_user_id = auth.uid());
+    USING (id = public.get_my_family_id() OR head_user_id = auth.uid());
 
 CREATE POLICY "Head can manage their families" ON public.families FOR ALL
     USING (head_user_id = auth.uid());
 
 -- Family members
 CREATE POLICY "Family members viewable by anyone in same family" ON public.family_members FOR SELECT
-    USING (family_id IN (SELECT family_id FROM public.family_members WHERE user_id = auth.uid()) OR family_id IN (SELECT id FROM public.families WHERE head_user_id = auth.uid()));
+    USING (family_id = public.get_my_family_id() OR family_id IN (SELECT id FROM public.families WHERE head_user_id = auth.uid()));
 
 CREATE POLICY "Head can delete family members" ON public.family_members FOR DELETE
     USING (family_id IN (SELECT id FROM public.families WHERE head_user_id = auth.uid()));
@@ -127,7 +133,7 @@ CREATE POLICY "Users can insert themselves into family_members" ON public.family
 
 -- Categories
 CREATE POLICY "Categories viewable by family members" ON public.categories FOR SELECT
-    USING (family_id IS NULL OR family_id IN (SELECT family_id FROM public.family_members WHERE user_id = auth.uid()) OR family_id IN (SELECT id FROM public.families WHERE head_user_id = auth.uid()));
+    USING (family_id IS NULL OR family_id = public.get_my_family_id() OR family_id IN (SELECT id FROM public.families WHERE head_user_id = auth.uid()));
 
 CREATE POLICY "Head can manage family categories" ON public.categories FOR ALL
     USING (family_id IN (SELECT id FROM public.families WHERE head_user_id = auth.uid()));
