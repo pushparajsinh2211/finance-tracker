@@ -18,22 +18,23 @@ builder.Services.AddCors(options =>
 // Supabase configuration
 var supabaseUrl = builder.Configuration["Supabase:Url"];
 var supabaseKey = builder.Configuration["Supabase:AnonKey"];
-var jwtSecret = builder.Configuration["Supabase:JwtSecret"];
-
+// No longer using a manual secret for ECC keys; we use the JWKS metadata endpoint instead.
 builder.Services.AddScoped<Supabase.Client>(_ =>
     new Supabase.Client(supabaseUrl!, supabaseKey, new Supabase.SupabaseOptions { AutoRefreshToken = false, AutoConnectRealtime = false }));
-
-var keyBytes = Encoding.UTF8.GetBytes(jwtSecret ?? throw new InvalidOperationException("Supabase JwtSecret is missing."));
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // This allows .NET to automatically fetch the public keys from Supabase
+        options.MetadataAddress = $"{supabaseUrl}/auth/v1/jwks";
+        
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
-            ValidateAudience = false, // Relaxed for debugging
-            ValidateIssuer = false,   // Relaxed for debugging
+            ValidIssuer = $"{supabaseUrl}/auth/v1",
+            ValidateIssuer = true,
+            ValidAudience = "authenticated",
+            ValidateAudience = true,
             ValidateLifetime = true
         };
     });
