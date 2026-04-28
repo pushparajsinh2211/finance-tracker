@@ -45,7 +45,7 @@ namespace FamilyLedger.Api.Controllers
                     Id = c.Id,
                     FamilyId = c.FamilyId,
                     Name = c.Name,
-                    Color = c.Color,
+                    Color = c.Color ?? "#9e9e9e",
                     IsDefault = c.IsDefault
                 }).OrderBy(c => c.Name).ToList();
                 
@@ -80,7 +80,7 @@ namespace FamilyLedger.Api.Controllers
                     Id = created.Id,
                     FamilyId = created.FamilyId,
                     Name = created.Name,
-                    Color = created.Color,
+                    Color = created.Color ?? "#9e9e9e",
                     IsDefault = created.IsDefault
                 });
             }
@@ -112,7 +112,7 @@ namespace FamilyLedger.Api.Controllers
                     Id = cat.Id,
                     FamilyId = cat.FamilyId,
                     Name = cat.Name,
-                    Color = cat.Color,
+                    Color = cat.Color ?? "#9e9e9e",
                     IsDefault = cat.IsDefault
                 });
             }

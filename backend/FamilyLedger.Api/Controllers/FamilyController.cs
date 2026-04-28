@@ -1,6 +1,8 @@
 using FamilyLedger.Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
+using System.Net.Mail;
 using System.Security.Claims;
 
 namespace FamilyLedger.Api.Controllers
@@ -40,18 +42,39 @@ namespace FamilyLedger.Api.Controllers
             return new Postgrest.Client($"{url}/rest/v1", options);
         }
 
+        private bool TryGetCurrentUserId(out Guid userId)
+        {
+            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+            return Guid.TryParse(userIdString, out userId);
+        }
+
+        private async Task<FamilyMember?> GetCurrentMembership(Postgrest.Client postgrest, Guid userId)
+        {
+            var fmResp = await postgrest.Table<FamilyMember>().Where(f => f.UserId == userId).Get();
+            return fmResp.Models.FirstOrDefault();
+        }
+
+        private static bool IsHead(FamilyMember? member)
+        {
+            return string.Equals(member?.Relation, "Head", StringComparison.OrdinalIgnoreCase);
+        }
+
         [HttpPost]
         public async Task<IActionResult> CreateFamily([FromBody] CreateFamilyRequest request)
         {
             try
             {
-                var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-                if (string.IsNullOrEmpty(userIdString) || !Guid.TryParse(userIdString, out var userId))
+                if (!TryGetCurrentUserId(out var userId))
                 {
                     return Unauthorized(new { Message = "User ID not found in token." });
                 }
 
                 var postgrest = GetPostgrestClient();
+                var existingMembership = await GetCurrentMembership(postgrest, userId);
+                if (existingMembership != null)
+                {
+                    return BadRequest(new { Message = "You already belong to a family. A user can be part of only one family." });
+                }
                 
                 string inviteCode = GenerateInviteCode();
 
@@ -119,7 +142,18 @@ namespace FamilyLedger.Api.Controllers
         {
             try
             {
+                if (!TryGetCurrentUserId(out var userId))
+                {
+                    return Unauthorized(new { Message = "User ID not found in token." });
+                }
+
                 var postgrest = GetPostgrestClient();
+                var existingMembership = await GetCurrentMembership(postgrest, userId);
+                if (existingMembership != null)
+                {
+                    return BadRequest(new { Message = "You already belong to a family. A user can be part of only one family." });
+                }
+
                 var rpcResult = await postgrest.Rpc("join_family_by_code", new Dictionary<string, object>
                 {
                     { "p_invite_code", request.InviteCode },
@@ -139,13 +173,11 @@ namespace FamilyLedger.Api.Controllers
         {
             try
             {
-                var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-                if (string.IsNullOrEmpty(userIdString) || !Guid.TryParse(userIdString, out var userId))
+                if (!TryGetCurrentUserId(out var userId))
                     return Unauthorized("User ID not found.");
 
                 var postgrest = GetPostgrestClient();
-                var fmResp = await postgrest.Table<FamilyMember>().Where(f => f.UserId == userId).Get();
-                var membership = fmResp.Models.FirstOrDefault();
+                var membership = await GetCurrentMembership(postgrest, userId);
 
                 if (membership == null) return NotFound(new { Message = "User is not a member of any family." });
 
@@ -158,7 +190,7 @@ namespace FamilyLedger.Api.Controllers
                 { 
                     Id = family.Id, 
                     Name = family.Name, 
-                    InviteCode = family.InviteCode, 
+                    InviteCode = IsHead(membership) ? family.InviteCode : string.Empty,
                     HeadUserId = family.HeadUserId 
                 });
             }
@@ -182,7 +214,7 @@ namespace FamilyLedger.Api.Controllers
                     FamilyId = m.FamilyId,
                     UserId = m.UserId,
                     DisplayName = m.DisplayName,
-                    Relation = m.Relation,
+                    Relation = m.Relation ?? string.Empty,
                     IsDependent = m.IsDependent
                 }).ToList();
 
@@ -200,10 +232,29 @@ namespace FamilyLedger.Api.Controllers
             try
             {
                 var postgrest = GetPostgrestClient();
+                if (!TryGetCurrentUserId(out var userId))
+                {
+                    return Unauthorized(new { Message = "User ID not found in token." });
+                }
+
+                var currentMembership = await GetCurrentMembership(postgrest, userId);
+                if (!IsHead(currentMembership))
+                {
+                    return Forbid();
+                }
+
                 var memberResponse = await postgrest.Table<FamilyMember>().Where(x => x.Id == id).Get();
                 var member = memberResponse.Models.FirstOrDefault();
 
                 if (member == null) return NotFound(new { Message = "Member not found." });
+                if (member.FamilyId != currentMembership!.FamilyId)
+                {
+                    return NotFound(new { Message = "Member not found." });
+                }
+                if (IsHead(member))
+                {
+                    return BadRequest(new { Message = "The Family Head cannot be marked as dependent." });
+                }
 
                 member.IsDependent = !member.IsDependent;
                 await postgrest.Table<FamilyMember>().Update(member);
@@ -214,7 +265,7 @@ namespace FamilyLedger.Api.Controllers
                     FamilyId = member.FamilyId,
                     UserId = member.UserId,
                     DisplayName = member.DisplayName,
-                    Relation = member.Relation,
+                    Relation = member.Relation ?? string.Empty,
                     IsDependent = member.IsDependent
                 });
             }
@@ -230,6 +281,30 @@ namespace FamilyLedger.Api.Controllers
             try
             {
                 var postgrest = GetPostgrestClient();
+                if (!TryGetCurrentUserId(out var userId))
+                {
+                    return Unauthorized(new { Message = "User ID not found in token." });
+                }
+
+                var currentMembership = await GetCurrentMembership(postgrest, userId);
+                if (!IsHead(currentMembership))
+                {
+                    return Forbid();
+                }
+
+                var memberResponse = await postgrest.Table<FamilyMember>().Where(x => x.Id == id).Get();
+                var member = memberResponse.Models.FirstOrDefault();
+
+                if (member == null) return NotFound(new { Message = "Member not found." });
+                if (member.FamilyId != currentMembership!.FamilyId)
+                {
+                    return NotFound(new { Message = "Member not found." });
+                }
+                if (IsHead(member))
+                {
+                    return BadRequest(new { Message = "The Family Head cannot be removed." });
+                }
+
                 await postgrest.Table<FamilyMember>().Where(x => x.Id == id).Delete();
                 return Ok(new { Message = "Member removed." });
             }
@@ -244,18 +319,18 @@ namespace FamilyLedger.Api.Controllers
         {
             try
             {
-                var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-                if (string.IsNullOrEmpty(userIdString) || !Guid.TryParse(userIdString, out var userId))
+                if (!TryGetCurrentUserId(out var userId))
                 {
                     return Unauthorized("User ID not found.");
                 }
 
                 var postgrest = GetPostgrestClient();
-                var fmResp = await postgrest.Table<FamilyMember>().Where(f => f.UserId == userId).Get();
-                var membership = fmResp.Models.FirstOrDefault();
+                var membership = await GetCurrentMembership(postgrest, userId);
 
                 if (membership == null)
                     return BadRequest(new { Message = "User is not a member of any family." });
+                if (!IsHead(membership))
+                    return Forbid();
 
                 var rpcResult = await postgrest.Rpc("get_dependent_expenses_summary", new Dictionary<string, object>
                 {
@@ -274,28 +349,38 @@ namespace FamilyLedger.Api.Controllers
         {
             try
             {
-                var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-                if (string.IsNullOrEmpty(userIdString) || !Guid.TryParse(userIdString, out var userId))
+                if (!MailAddress.TryCreate(request.Email, out var recipient))
+                {
+                    return BadRequest(new { Message = "Please provide a valid email address." });
+                }
+
+                if (!TryGetCurrentUserId(out var userId))
                     return Unauthorized("User ID not found.");
 
                 var postgrest = GetPostgrestClient();
                 
                 // 1. Verify the current user is the head of the family
-                var fmResp = await postgrest.Table<FamilyMember>().Where(f => f.UserId == userId).Get();
-                var membership = fmResp.Models.FirstOrDefault();
+                var membership = await GetCurrentMembership(postgrest, userId);
 
-                if (membership == null || membership.Relation != "Head")
-                    return Unauthorized(new { Message = "Only the Family Head can send invitations." });
+                if (!IsHead(membership))
+                    return Forbid();
 
-                var familyResp = await postgrest.Table<Family>().Where(f => f.Id == membership.FamilyId).Get();
+                var headMembership = membership!;
+                var familyResp = await postgrest.Table<Family>().Where(f => f.Id == headMembership.FamilyId).Get();
                 var family = familyResp.Models.FirstOrDefault();
 
                 if (family == null) return NotFound("Family not found.");
 
-                // 2. Logic for sending the invitation
-                // Note: In a production app, you would integrate an Email Service (SendGrid/Postmark) here.
-                // For now, we simulate the success and log it.
-                Console.WriteLine($"[INVITE] Sending family invite for '{family.Name}' (Code: {family.InviteCode}) to {request.Email}");
+                if (!IsEmailConfigured())
+                {
+                    return StatusCode(StatusCodes.Status501NotImplemented, new
+                    {
+                        Message = "Email invitations are not configured yet. Copy and share the invite code instead.",
+                        InviteCode = family.InviteCode
+                    });
+                }
+
+                await SendInviteEmail(recipient, family);
 
                 return Ok(new { Message = $"Invitation sent successfully to {request.Email}!" });
             }
@@ -303,6 +388,51 @@ namespace FamilyLedger.Api.Controllers
             {
                 return BadRequest(new { Message = ex.Message });
             }
+        }
+
+        private bool IsEmailConfigured()
+        {
+            return !string.IsNullOrWhiteSpace(_configuration["Email:Smtp:Host"])
+                && !string.IsNullOrWhiteSpace(_configuration["Email:From"]);
+        }
+
+        private async Task SendInviteEmail(MailAddress recipient, Family family)
+        {
+            var host = _configuration["Email:Smtp:Host"]!;
+            var port = int.TryParse(_configuration["Email:Smtp:Port"], out var configuredPort) ? configuredPort : 587;
+            var enableSsl = !bool.TryParse(_configuration["Email:Smtp:EnableSsl"], out var configuredSsl) || configuredSsl;
+            var username = _configuration["Email:Smtp:Username"];
+            var password = _configuration["Email:Smtp:Password"];
+            var fromEmail = _configuration["Email:From"]!;
+            var fromName = _configuration["Email:FromName"] ?? "FamilyLedger";
+
+            using var message = new MailMessage
+            {
+                From = new MailAddress(fromEmail, fromName),
+                Subject = $"You're invited to join {family.Name} on FamilyLedger",
+                Body = $"""
+                You've been invited to join {family.Name} on FamilyLedger.
+
+                Use this invite code after signing in:
+                {family.InviteCode}
+
+                If you were not expecting this invitation, you can ignore this email.
+                """,
+                IsBodyHtml = false
+            };
+            message.To.Add(recipient);
+
+            using var smtp = new SmtpClient(host, port)
+            {
+                EnableSsl = enableSsl
+            };
+
+            if (!string.IsNullOrWhiteSpace(username))
+            {
+                smtp.Credentials = new NetworkCredential(username, password);
+            }
+
+            await smtp.SendMailAsync(message);
         }
     }
 

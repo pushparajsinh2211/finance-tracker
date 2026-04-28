@@ -22,10 +22,14 @@ export class FamilyViewComponent implements OnInit {
   family: any = null;
   isLoading = true;
   errorMsg = '';
+  summaryError = '';
+  currentUserId = '';
   
   showInviteModal = false;
   inviteEmail = '';
   isInviting = false;
+  inviteError = '';
+  fallbackInviteCode = '';
 
   constructor(
     private familyService: FamilyService,
@@ -34,28 +38,45 @@ export class FamilyViewComponent implements OnInit {
   ) { }
 
   ngOnInit() {
+    this.currentUserId = this.getCurrentUserId();
     this.loadData();
   }
 
   async loadData() {
     this.isLoading = true;
+    this.errorMsg = '';
+    this.summaryError = '';
+    this.summary = [];
+
     try {
-      const [membersRes, catsRes, summaryRes, familyRes] = await Promise.all([
+      const [membersRes, catsRes, familyRes] = await Promise.all([
         firstValueFrom(this.familyService.getMembers()),
         firstValueFrom(this.categoryService.getCategories()),
-        firstValueFrom(this.familyService.getFamilySummary()),
         firstValueFrom(this.familyService.getFamily())
       ]);
 
       this.members = membersRes || [];
       this.categories = catsRes || [];
-      this.summary = summaryRes || [];
       this.family = familyRes;
+
+      if (this.isHead) {
+        await this.loadFamilySummary();
+      }
     } catch (err: any) {
       console.error(err);
       this.errorMsg = err.error?.message || "Failed to load family details.";
     } finally {
       this.isLoading = false;
+    }
+  }
+
+  async loadFamilySummary() {
+    try {
+      this.summary = await firstValueFrom(this.familyService.getFamilySummary()) || [];
+    } catch (err: any) {
+      console.error(err);
+      this.summaryError = err.error?.message || "Dependent summary is unavailable right now.";
+      this.summary = [];
     }
   }
 
@@ -77,15 +98,21 @@ export class FamilyViewComponent implements OnInit {
   openInviteModal() {
     this.showInviteModal = true;
     this.inviteEmail = '';
+    this.inviteError = '';
+    this.fallbackInviteCode = '';
   }
 
   closeInviteModal() {
     this.showInviteModal = false;
+    this.inviteError = '';
+    this.fallbackInviteCode = '';
   }
 
   sendInvite() {
     if (!this.inviteEmail) return;
     this.isInviting = true;
+    this.inviteError = '';
+    this.fallbackInviteCode = '';
     
     this.familyService.sendInvite(this.inviteEmail).subscribe({
       next: (res) => {
@@ -95,14 +122,79 @@ export class FamilyViewComponent implements OnInit {
       },
       error: (err) => {
         this.isInviting = false;
-        alert(err.error?.message || "Failed to send invitation.");
+        const message = err.error?.message || err.error?.Message || "Failed to send invitation.";
+        const inviteCode = err.error?.inviteCode || err.error?.InviteCode;
+
+        if (err.status === 501 && inviteCode) {
+          this.inviteError = message;
+          this.fallbackInviteCode = inviteCode;
+          return;
+        }
+
+        this.inviteError = message;
       }
     });
   }
 
+  copyFallbackInviteCode() {
+    if (!this.fallbackInviteCode) return;
+
+    navigator.clipboard.writeText(this.fallbackInviteCode).then(() => {
+      alert('Invite code copied to clipboard.');
+    }).catch(() => {
+      alert(`Invite code: ${this.fallbackInviteCode}`);
+    });
+  }
+
   get isHead(): boolean {
-    const userId = this.authService.getAuthToken() ? JSON.parse(atob(this.authService.getAuthToken()!.split('.')[1])).sub : '';
-    return this.family?.headUserId === userId;
+    return !!this.family?.headUserId && this.normalizeId(this.family.headUserId) === this.normalizeId(this.currentUserId);
+  }
+
+  copyInviteCode() {
+    const code = this.family?.inviteCode;
+    if (!code) return;
+
+    navigator.clipboard.writeText(code).then(() => {
+      alert('Invite code copied to clipboard.');
+    }).catch(() => {
+      alert(`Invite code: ${code}`);
+    });
+  }
+
+  private getCurrentUserId(): string {
+    const token = this.authService.getAuthToken();
+    if (!token) return '';
+
+    try {
+      const payloadSegment = token.split('.')[1];
+      const normalizedPayload = payloadSegment.replace(/-/g, '+').replace(/_/g, '/');
+      const paddedPayload = normalizedPayload.padEnd(normalizedPayload.length + (4 - normalizedPayload.length % 4) % 4, '=');
+      const payload = JSON.parse(atob(paddedPayload));
+      return payload.sub || '';
+    } catch {
+      return '';
+    }
+  }
+
+  private normalizeId(id: string): string {
+    return (id || '').trim().toLowerCase();
+  }
+
+  isMemberHead(member: any): boolean {
+    return (member?.relation || '').toLowerCase() === 'head';
+  }
+
+  isCurrentUser(member: any): boolean {
+    return this.normalizeId(member?.userId) === this.normalizeId(this.currentUserId);
+  }
+
+  getMemberRoleLabel(member: any): string {
+    if (this.isMemberHead(member)) return 'Head';
+    return member?.isDependent ? 'Dependent' : 'Member';
+  }
+
+  canManageMember(member: any): boolean {
+    return this.isHead && !this.isMemberHead(member);
   }
 
   getMemberName(id: string) {

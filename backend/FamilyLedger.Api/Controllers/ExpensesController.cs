@@ -62,7 +62,9 @@ namespace FamilyLedger.Api.Controllers
                     MemberUserId = e.UserId,
                     Amount = e.Amount,
                     Note = e.Note ?? string.Empty,
-                    Date = e.Date
+                    Date = e.Date,
+                    IsRecurring = e.IsRecurring,
+                    ReceiptUrl = e.ReceiptUrl ?? string.Empty
                 }).OrderByDescending(e => e.Date).ToList();
 
                 return Ok(dtos);
@@ -116,7 +118,9 @@ namespace FamilyLedger.Api.Controllers
                     MemberUserId = created.UserId,
                     Amount = created.Amount,
                     Note = created.Note ?? string.Empty,
-                    Date = created.Date
+                    Date = created.Date,
+                    IsRecurring = created.IsRecurring,
+                    ReceiptUrl = created.ReceiptUrl ?? string.Empty
                 });
             }
             catch (Exception ex)
@@ -154,7 +158,9 @@ namespace FamilyLedger.Api.Controllers
                     MemberUserId = expense.UserId,
                     Amount = expense.Amount,
                     Note = expense.Note ?? string.Empty,
-                    Date = expense.Date
+                    Date = expense.Date,
+                    IsRecurring = expense.IsRecurring,
+                    ReceiptUrl = expense.ReceiptUrl ?? string.Empty
                 });
             }
             catch (Exception ex)

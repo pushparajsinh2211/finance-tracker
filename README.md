@@ -45,6 +45,18 @@ cd backend/FamilyLedger.Api
 dotnet run
 ```
 
+To enable family invitation emails, configure SMTP settings through environment variables:
+```bash
+Email__From=your-sender@example.com
+Email__FromName=FamilyLedger
+Email__Smtp__Host=smtp.example.com
+Email__Smtp__Port=587
+Email__Smtp__EnableSsl=true
+Email__Smtp__Username=your-smtp-username
+Email__Smtp__Password=your-smtp-password
+```
+If these values are not configured, the app will ask the Family Head to copy and share the invite code instead of pretending an email was sent.
+
 ### 3. Frontend (Angular)
 Serve the application locally:
 ```bash

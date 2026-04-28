@@ -15,7 +15,9 @@
             <div *ngIf="isHead" class="glass-panel" style="padding: 1rem; text-align: right; border-radius: var(--radius-md);">
                 <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Invite Code</div>
                 <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary); letter-spacing: 0.1em;">{{ family?.inviteCode }}</div>
-                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.25rem;">Share this with your family members</div>
+                <button type="button" class="btn btn-secondary" (click)="copyInviteCode()" style="height: 30px; font-size: 0.75rem; margin-top: 0.75rem; padding: 0 0.75rem;">
+                    Copy Code
+                </button>
             </div>
         </header>
 
@@ -34,28 +36,34 @@
                 <h2 style="font-size: 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
                     <span style="font-size: 1.5rem;">👥</span> Family Members
                 </h2>
+                <p *ngIf="!isHead" style="color: var(--text-muted); font-size: 0.85rem; margin-top: -1rem; margin-bottom: 1.5rem;">
+                    Only the Family Head can invite, remove, or change dependent status for members.
+                </p>
                 <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
                     <div class="card" *ngFor="let m of members" style="margin-bottom: 0; position: relative;">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                             <div>
-                                <h3 style="margin-bottom: 0.25rem; color: var(--text-main);">{{ m.displayName }}</h3>
+                                <h3 style="margin-bottom: 0.25rem; color: var(--text-main);">
+                                    {{ m.displayName }}
+                                    <span *ngIf="isCurrentUser(m)" style="font-size: 0.75rem; font-weight: 400; color: var(--text-muted);">(You)</span>
+                                </h3>
                                 <div style="font-size: 0.8rem; color: var(--text-muted);">{{ m.relation || 'Member' }}</div>
                             </div>
-                            <span [class]="m.relation === 'Head' ? 'category-badge' : 'badge'" 
-                                  [style.backgroundColor]="m.relation === 'Head' ? 'var(--primary)33' : 'rgba(255,255,255,0.05)'"
-                                  [style.color]="m.relation === 'Head' ? 'var(--primary)' : 'var(--text-muted)'">
-                                {{ m.relation === 'Head' ? 'Head' : 'Member' }}
+                            <span [class]="isMemberHead(m) ? 'category-badge' : 'badge'"
+                                  [style.backgroundColor]="isMemberHead(m) ? 'var(--primary)33' : m.isDependent ? 'rgba(245, 158, 11, 0.14)' : 'rgba(255,255,255,0.05)'"
+                                  [style.color]="isMemberHead(m) ? 'var(--primary)' : m.isDependent ? '#F59E0B' : 'var(--text-muted)'">
+                                {{ getMemberRoleLabel(m) }}
                             </span>
                         </div>
 
                         <div style="margin-top: 1.5rem; display: flex; gap: 0.75rem; align-items: center;">
                             <div style="flex: 1; display: flex; align-items: center; gap: 0.5rem;">
                                 <label class="switch" style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem; color: var(--text-muted);">
-                                    <input type="checkbox" [checked]="m.isDependent" (change)="toggleDependent(m.id)" [disabled]="!isHead || m.relation === 'Head'">
+                                    <input type="checkbox" [checked]="m.isDependent" (change)="toggleDependent(m.id)" [disabled]="!canManageMember(m)">
                                     Dependent
                                 </label>
                             </div>
-                            <button *ngIf="isHead && m.relation !== 'Head'" (click)="removeMember(m.id)" 
+                            <button *ngIf="canManageMember(m)" (click)="removeMember(m.id)"
                                     style="background: none; border: none; color: var(--secondary); cursor: pointer; font-size: 0.8rem; padding: 0.25rem;">
                                 Remove
                             </button>
@@ -65,10 +73,13 @@
             </section>
 
             <!-- Aggregated Summary Section -->
-            <section>
+            <section *ngIf="isHead">
                 <h2 style="font-size: 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
                     <span style="font-size: 1.5rem;">📊</span> Dependent Expenses Summary
                 </h2>
+                <div *ngIf="summaryError" class="alert-error" style="margin-bottom: 1.5rem;">
+                    {{ summaryError }}
+                </div>
                 <div *ngIf="summary.length === 0" class="card" style="padding: 3rem; text-align: center; color: var(--text-muted);">
                     <p>No dependent expenses recorded yet.</p>
                 </div>
@@ -101,6 +112,17 @@
             <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
                 Send an invitation to join <strong>{{ family?.name }}</strong>. They will receive the invite code via email.
             </p>
+
+            <div *ngIf="inviteError" class="alert-error" style="margin-bottom: 1rem;">
+                {{ inviteError }}
+            </div>
+            <div *ngIf="fallbackInviteCode" style="background: rgba(0,0,0,0.03); border: 1px dashed var(--border-strong); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1rem;">
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">Invite Code</div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary); letter-spacing: 0.1em;">{{ fallbackInviteCode }}</div>
+                <button type="button" class="btn btn-secondary" (click)="copyFallbackInviteCode()" style="height: 30px; font-size: 0.75rem; margin-top: 0.75rem; padding: 0 0.75rem;">
+                    Copy Code
+                </button>
+            </div>
 
             <div class="form-group">
                 <label class="form-label">Member's Email Address</label>

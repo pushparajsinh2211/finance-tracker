@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Supabase.Gotrue;
+using System.Net.Mail;
 
 namespace FamilyLedger.Api.Controllers
 {
@@ -48,6 +50,37 @@ namespace FamilyLedger.Api.Controllers
                 return Unauthorized(new { Message = ex.Message });
             }
         }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            if (!MailAddress.TryCreate(request.Email, out _))
+            {
+                return BadRequest(new { Message = "Please provide a valid email address." });
+            }
+
+            try
+            {
+                var redirectTo = string.IsNullOrWhiteSpace(request.RedirectTo) ? null : request.RedirectTo;
+                if (redirectTo == null)
+                {
+                    await _supabaseClient.Auth.ResetPasswordForEmail(request.Email);
+                }
+                else
+                {
+                    await _supabaseClient.Auth.ResetPasswordForEmail(new ResetPasswordForEmailOptions(request.Email)
+                    {
+                        RedirectTo = redirectTo
+                    });
+                }
+
+                return Ok(new { Message = "If an account exists, a reset link has been sent." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
     }
 
     public class RegisterRequest
@@ -60,6 +93,12 @@ namespace FamilyLedger.Api.Controllers
     {
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
+    }
+
+    public class ResetPasswordRequest
+    {
+        public string Email { get; set; } = string.Empty;
+        public string? RedirectTo { get; set; }
     }
 
     public class AuthResponse

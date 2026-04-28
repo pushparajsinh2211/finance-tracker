@@ -38,6 +38,8 @@ namespace FamilyLedger.Api.Models
         public decimal Amount { get; set; }
         public string Note { get; set; } = string.Empty;
         public DateTime Date { get; set; }
+        public bool IsRecurring { get; set; }
+        public string ReceiptUrl { get; set; } = string.Empty;
     }
 
     public class NotificationDto
