@@ -1,10 +1,12 @@
 <nav class="top-nav">
     <div class="container" style="display: flex; justify-content: space-between; align-items: center; padding: 0;">
-        <a routerLink="/" class="logo" style="text-decoration: none;">FamilyLedger</a>
+        <a routerLink="/" class="logo" style="text-decoration: none;">FinanceHub</a>
 
         <div style="display: flex; gap: var(--space-6); align-items: center;">
             <a routerLink="/dashboard" routerLinkActive="active-link"
                 style="color: var(--text-muted); text-decoration: none;">Transactions</a>
+            <a routerLink="/connections" routerLinkActive="active-link"
+                style="color: var(--text-muted); text-decoration: none;">Data sources</a>
             <a routerLink="/budgets" routerLinkActive="active-link"
                 style="color: var(--text-muted); text-decoration: none;">Budgets</a>
             <a routerLink="/finance" routerLinkActive="active-link"
@@ -12,7 +14,6 @@
             <a routerLink="/family" routerLinkActive="active-link"
                 style="color: var(--text-muted); text-decoration: none;">Family</a>
 
-            <!-- Notification Bell -->
             <div style="position: relative; margin-left: 1rem;">
                 <button (click)="toggleDropdown()"
                     style="background: transparent; border: none; font-size: 1.2rem; cursor: pointer; position: relative; color: var(--text-main);">
@@ -20,7 +21,6 @@
                     <span *ngIf="unreadCount > 0" class="badge">{{ unreadCount }}</span>
                 </button>
 
-                <!-- Dropdown -->
                 <div *ngIf="showDropdown" class="glass-panel"
                     style="position: absolute; right: 0; top: 100%; width: 300px; padding: 1rem; margin-top: 0.5rem; z-index: 1000; border-radius: var(--radius-md);">
                     <div
