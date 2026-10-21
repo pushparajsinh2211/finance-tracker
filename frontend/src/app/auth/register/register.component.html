@@ -1,12 +1,12 @@
 <div class="auth-wrapper animate-fade-in">
     <div class="glass-panel auth-panel">
         <div class="auth-header">
-            <div class="logo">FamilyLedger</div>
+            <div class="logo">FinanceHub</div>
             <h2>Create Account</h2>
             <p>Join to collaborate on family spending.</p>
         </div>
 
-        <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+        <form *ngIf="!pendingEmail" [formGroup]="registerForm" (ngSubmit)="onSubmit()">
             <div class="form-group">
                 <label class="form-label">Email Address</label>
                 <input type="email" class="form-control" formControlName="email" placeholder="you@example.com">
@@ -22,18 +22,28 @@
                 {{ errorMessage }}
             </div>
 
-            <div class="alert-success" *ngIf="successMessage">
-                {{ successMessage }}
-            </div>
-
             <button type="submit" class="btn btn-primary btn-block" [disabled]="registerForm.invalid || isLoading">
                 <span *ngIf="!isLoading">Sign Up</span>
                 <span *ngIf="isLoading" class="spinner"></span>
             </button>
         </form>
 
+        <div *ngIf="pendingEmail">
+            <div class="alert-success">{{ successMessage }}</div>
+            <p style="color: var(--text-muted); margin-top: 1rem;">
+                We sent the link to <strong>{{ pendingEmail }}</strong>. Check spam or promotions if it is not in your inbox.
+            </p>
+            <button type="button" class="btn btn-secondary btn-block" (click)="resendConfirmation()"
+                [disabled]="isResending">
+                {{ isResending ? 'Sending…' : 'Resend confirmation email' }}
+            </button>
+            <div class="alert-error" *ngIf="errorMessage" style="margin-top: 1rem;">
+                {{ errorMessage }}
+            </div>
+        </div>
+
         <div class="auth-footer">
-            Already have an account? <a routerLink="/login">Log in</a>
+            Already confirmed? <a routerLink="/login">Log in</a>
         </div>
     </div>
 </div>

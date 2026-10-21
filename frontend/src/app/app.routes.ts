@@ -12,20 +12,20 @@ export const routes: Routes = [
     { path: 'register', component: RegisterComponent },
     { path: 'forgot-password', component: ForgotPasswordComponent },
     { path: 'onboarding', canActivate: [authGuard], component: OnboardingComponent },
-    
-    // Authenticated Layout Routes
+
     {
         path: '',
         component: MainLayoutComponent,
         canActivate: [authGuard, familyGuard],
         children: [
             { path: 'dashboard', loadComponent: () => import('./dashboard/dashboard.component').then(m => m.DashboardComponent) },
+            { path: 'connections', loadComponent: () => import('./connections/connections.component').then(m => m.ConnectionsComponent) },
             { path: 'budgets', loadComponent: () => import('./budgets/budgets-view/budgets-view.component').then(m => m.BudgetsViewComponent) },
             { path: 'finance', loadComponent: () => import('./finance/finance-view/finance-view.component').then(m => m.FinanceViewComponent) },
             { path: 'family', loadComponent: () => import('./family/family-view/family-view.component').then(m => m.FamilyViewComponent) },
             { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
         ]
     },
-    
+
     { path: '**', redirectTo: '/dashboard' }
 ];

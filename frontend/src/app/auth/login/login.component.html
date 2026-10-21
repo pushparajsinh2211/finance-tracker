@@ -1,9 +1,13 @@
 <div class="auth-wrapper animate-fade-in">
   <div class="glass-panel auth-panel">
     <div class="auth-header">
-      <div class="logo">FamilyLedger</div>
+      <div class="logo">FinanceHub</div>
       <h2>Welcome Back</h2>
       <p>Log in to track your family's finances.</p>
+    </div>
+
+    <div class="alert-success" *ngIf="confirmationMessage">
+      {{ confirmationMessage }}
     </div>
 
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
@@ -22,7 +26,7 @@
           Password is required.
         </div>
       </div>
-      
+
       <div class="form-options">
         <a routerLink="/forgot-password" class="forgot-link">Forgot password?</a>
       </div>

@@ -19,6 +19,10 @@ export class AuthService {
     return (t === 'undefined' || t === 'null') ? null : t;
   }
 
+  private confirmationRedirect(): string {
+    return window.location.origin + '/login?confirmed=1';
+  }
+
   isLoggedIn(): boolean {
     return !!this.getToken();
   }
@@ -40,7 +44,10 @@ export class AuthService {
   }
 
   register(credentials: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/register`, credentials).pipe(
+    return this.http.post(`${this.apiUrl}/register`, {
+      ...credentials,
+      redirectTo: this.confirmationRedirect()
+    }).pipe(
       tap((res: any) => {
         const token = res?.accessToken || res?.AccessToken || res?.access_token;
         if (token) {
@@ -49,6 +56,13 @@ export class AuthService {
         }
       })
     );
+  }
+
+  resendConfirmation(email: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/resend-confirmation`, {
+      email,
+      redirectTo: this.confirmationRedirect()
+    });
   }
 
   resetPassword(email: string) {

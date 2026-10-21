@@ -1,0 +1,48 @@
+<section class="connections-page container">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">FinanceHub</p>
+      <h1>Data sources</h1>
+      <p class="intro">
+        Bring bank, card, UPI and cash activity into one reviewable ledger.
+        External automatic connections are architecture-ready but are not live yet.
+      </p>
+    </div>
+  </header>
+
+  <div class="notice" role="status">
+    <strong>No banking credentials are collected.</strong>
+    Bank, card and UPI sync will remain disabled until a regulated provider is selected,
+    contracted and security-reviewed.
+  </div>
+
+  <p *ngIf="loading" class="state">Loading data sources…</p>
+  <p *ngIf="error" class="state error">{{ error }}</p>
+
+  <div class="source-grid" *ngIf="!loading">
+    <article class="source-card" *ngFor="let source of sources">
+      <div class="source-heading">
+        <div>
+          <p class="source-kind">{{ source.automatic ? 'Automatic' : 'Manual' }}</p>
+          <h2>{{ source.name }}</h2>
+        </div>
+        <span class="status" [class.available]="source.availability === 'available'">
+          {{ availabilityLabel(source) }}
+        </span>
+      </div>
+
+      <p>{{ source.description }}</p>
+
+      <ul>
+        <li *ngFor="let capability of source.capabilities">{{ capability }}</li>
+      </ul>
+
+      <a *ngIf="source.id === 'cash'" class="btn btn-primary" routerLink="/dashboard">
+        Add cash expense
+      </a>
+      <button *ngIf="source.id !== 'cash'" class="btn btn-secondary" type="button" disabled>
+        Connect when available
+      </button>
+    </article>
+  </div>
+</section>
