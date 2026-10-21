@@ -37,3 +37,17 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run build
+
+  migrations:
+    name: Supabase migration smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start disposable Supabase stack and apply migrations
+        run: supabase start
+      - name: Rebuild database from the complete migration chain
+        run: supabase db reset --local
