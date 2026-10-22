@@ -29,6 +29,8 @@ export class LoginComponent {
 
     if (route.snapshot.queryParamMap.get('confirmed') === '1') {
       this.confirmationMessage = 'Email confirmed. You can sign in now.';
+    } else if (route.snapshot.queryParamMap.get('passwordReset') === '1') {
+      this.confirmationMessage = 'Password updated. Sign in with your new password.';
     }
   }
 
