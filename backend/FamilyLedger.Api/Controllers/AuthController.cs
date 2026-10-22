@@ -149,9 +149,13 @@ namespace FamilyLedger.Api.Controllers
                 return BadRequest(new { Message = "Please provide a valid email address." });
             }
 
+            if (!TryValidateRedirect(request.RedirectTo, out var redirectTo))
+            {
+                return BadRequest(new { Message = "The password recovery redirect URL is invalid." });
+            }
+
             try
             {
-                var redirectTo = string.IsNullOrWhiteSpace(request.RedirectTo) ? null : request.RedirectTo;
                 if (redirectTo == null)
                 {
                     await _supabaseClient.Auth.ResetPasswordForEmail(request.Email);

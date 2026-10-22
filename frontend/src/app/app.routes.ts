@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { LoginComponent } from './auth/login/login.component';
 import { RegisterComponent } from './auth/register/register.component';
 import { ForgotPasswordComponent } from './auth/forgot-password/forgot-password.component';
+import { UpdatePasswordComponent } from './auth/update-password/update-password.component';
 import { OnboardingComponent } from './onboarding/onboarding.component';
 import { authGuard } from './auth/auth.guard';
 import { familyGuard } from './auth/family.guard';
@@ -11,6 +12,7 @@ export const routes: Routes = [
     { path: 'login', component: LoginComponent },
     { path: 'register', component: RegisterComponent },
     { path: 'forgot-password', component: ForgotPasswordComponent },
+    { path: 'update-password', component: UpdatePasswordComponent },
     { path: 'onboarding', canActivate: [authGuard], component: OnboardingComponent },
 
     {
