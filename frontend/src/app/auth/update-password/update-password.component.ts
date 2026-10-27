@@ -23,7 +23,9 @@ export class UpdatePasswordComponent implements OnInit {
     environment.supabaseKey,
     {
       auth: {
-        persistSession: false,
+        persistSession: true,
+        storage: window.sessionStorage,
+        storageKey: 'financehub-password-recovery',
         autoRefreshToken: false,
         detectSessionInUrl: false
       }
@@ -57,17 +59,22 @@ export class UpdatePasswordComponent implements OnInit {
       if (code) {
         const { error } = await this.supabase.auth.exchangeCodeForSession(code);
         if (error) throw error;
+        this.clearRecoveryTokens();
       } else if (accessToken && refreshToken) {
         const { error } = await this.supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken
         });
         if (error) throw error;
+        this.clearRecoveryTokens();
       } else {
-        throw new Error('This password reset link is invalid or has expired.');
+        const { data, error } = await this.supabase.auth.getSession();
+        if (error) throw error;
+        if (!data.session) {
+          throw new Error('This password reset link is invalid or has expired.');
+        }
       }
 
-      this.clearRecoveryTokens();
       this.recoveryReady = true;
     } catch (error: any) {
       this.errorMessage = error?.message || 'This password reset link is invalid or has expired.';
@@ -95,6 +102,7 @@ export class UpdatePasswordComponent implements OnInit {
       if (error) throw error;
 
       await this.supabase.auth.signOut();
+      window.sessionStorage.removeItem('financehub-password-recovery');
       await this.router.navigate(['/login'], { queryParams: { passwordReset: '1' } });
     } catch (error: any) {
       this.errorMessage = error?.message || 'Password could not be updated. Request a new reset link and try again.';
