@@ -1,4 +1,5 @@
 using FamilyLedger.Api.Models;
+using FamilyLedger.Api.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -19,20 +20,9 @@ namespace FamilyLedger.Api.Controllers
 
         private Postgrest.Client GetPostgrestClient()
         {
-            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
-            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
-                throw new UnauthorizedAccessException("Missing Authorization header.");
-
-            var token = authHeader.Substring("Bearer ".Length).Trim();
-            var options = new Postgrest.ClientOptions 
-            { 
-                Headers = new Dictionary<string, string> 
-                { 
-                    { "Authorization", $"Bearer {token}" },
-                    { "apikey", _configuration["Supabase:AnonKey"]! }
-                } 
-            };
-            return new Postgrest.Client($"{_configuration["Supabase:Url"]}/rest/v1", options);
+            return AuthenticatedPostgrestClientFactory.Create(
+                _configuration,
+                Request.Headers.Authorization.FirstOrDefault());
         }
 
         [HttpGet]
@@ -42,7 +32,7 @@ namespace FamilyLedger.Api.Controllers
             {
                 var postgrest = GetPostgrestClient();
                 var response = await postgrest.Table<Emi>().Get();
-                return Ok(response.Models.OrderByDescending(e => e.CreatedAt));
+                return Ok(response.Models.OrderByDescending(e => e.CreatedAt).Select(ToDto));
             }
             catch (Exception ex)
             {
@@ -64,13 +54,14 @@ namespace FamilyLedger.Api.Controllers
                     LenderName = request.LenderName,
                     Principal = request.Principal,
                     MonthlyEmi = request.MonthlyEmi,
-                    StartDate = request.StartDate,
+                    StartDate = request.StartDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
                     TenureMonths = request.TenureMonths
                 };
 
                 var postgrest = GetPostgrestClient();
                 var response = await postgrest.Table<Emi>().Insert(newEmi);
-                return Ok(response.Models.FirstOrDefault());
+                var created = response.Models.FirstOrDefault();
+                return created == null ? BadRequest() : Ok(ToDto(created));
             }
             catch (Exception ex)
             {
@@ -92,11 +83,13 @@ namespace FamilyLedger.Api.Controllers
                 if (request.LenderName != null) emi.LenderName = request.LenderName;
                 if (request.Principal.HasValue) emi.Principal = request.Principal.Value;
                 if (request.MonthlyEmi.HasValue) emi.MonthlyEmi = request.MonthlyEmi.Value;
-                if (request.StartDate.HasValue) emi.StartDate = request.StartDate.Value;
+                if (request.StartDate.HasValue)
+                    emi.StartDate = request.StartDate.Value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
                 if (request.TenureMonths.HasValue) emi.TenureMonths = request.TenureMonths.Value;
 
                 var updateResponse = await postgrest.Table<Emi>().Update(emi);
-                return Ok(updateResponse.Models.FirstOrDefault());
+                var updated = updateResponse.Models.FirstOrDefault();
+                return updated == null ? BadRequest() : Ok(ToDto(updated));
             }
             catch (Exception ex)
             {
@@ -118,6 +111,18 @@ namespace FamilyLedger.Api.Controllers
                 return BadRequest(new { Message = ex.Message });
             }
         }
+
+        private static EmiDto ToDto(Emi emi) => new()
+        {
+            Id = emi.Id,
+            UserId = emi.UserId,
+            LenderName = emi.LenderName,
+            Principal = emi.Principal,
+            MonthlyEmi = emi.MonthlyEmi,
+            StartDate = DateOnly.FromDateTime(emi.StartDate),
+            TenureMonths = emi.TenureMonths,
+            CreatedAt = emi.CreatedAt
+        };
     }
 
     public class CreateEmiRequest
@@ -125,7 +130,7 @@ namespace FamilyLedger.Api.Controllers
         public string LenderName { get; set; } = string.Empty;
         public decimal Principal { get; set; }
         public decimal MonthlyEmi { get; set; }
-        public DateTime StartDate { get; set; }
+        public DateOnly StartDate { get; set; }
         public int TenureMonths { get; set; }
     }
 
@@ -134,7 +139,7 @@ namespace FamilyLedger.Api.Controllers
         public string? LenderName { get; set; }
         public decimal? Principal { get; set; }
         public decimal? MonthlyEmi { get; set; }
-        public DateTime? StartDate { get; set; }
+        public DateOnly? StartDate { get; set; }
         public int? TenureMonths { get; set; }
     }
 }

@@ -56,11 +56,9 @@ export class DashboardComponent implements OnInit {
       const year = parseInt(this.selectedMonth.split('-')[0]);
       const month = parseInt(this.selectedMonth.split('-')[1]);
 
-      const startDate = new Date(year, month - 1, 1);
-      const endDate = new Date(year, month, 0);
-
-      filters.startDate = startDate.toISOString().substring(0, 10);
-      filters.endDate = endDate.toISOString().substring(0, 10);
+      filters.startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+      const lastDay = new Date(year, month, 0).getDate();
+      filters.endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
     }
 
     if (this.selectedCategoryId) {

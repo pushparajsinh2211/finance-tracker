@@ -1,4 +1,5 @@
 using FamilyLedger.Api.Models;
+using FamilyLedger.Api.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -19,20 +20,9 @@ namespace FamilyLedger.Api.Controllers
 
         private Postgrest.Client GetPostgrestClient()
         {
-            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
-            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
-                throw new UnauthorizedAccessException("Missing Authorization header.");
-
-            var token = authHeader.Substring("Bearer ".Length).Trim();
-            var options = new Postgrest.ClientOptions 
-            { 
-                Headers = new Dictionary<string, string> 
-                { 
-                    { "Authorization", $"Bearer {token}" },
-                    { "apikey", _configuration["Supabase:AnonKey"]! }
-                } 
-            };
-            return new Postgrest.Client($"{_configuration["Supabase:Url"]}/rest/v1", options);
+            return AuthenticatedPostgrestClientFactory.Create(
+                _configuration,
+                Request.Headers.Authorization.FirstOrDefault());
         }
 
         [HttpGet]
@@ -42,7 +32,7 @@ namespace FamilyLedger.Api.Controllers
             {
                 var postgrest = GetPostgrestClient();
                 var response = await postgrest.Table<SavingsGoal>().Get();
-                return Ok(response.Models.OrderByDescending(s => s.CreatedAt));
+                return Ok(response.Models.OrderByDescending(s => s.CreatedAt).Select(ToDto));
             }
             catch (Exception ex)
             {
@@ -64,13 +54,14 @@ namespace FamilyLedger.Api.Controllers
                     Name = request.Name,
                     TargetAmount = request.TargetAmount,
                     CurrentAmount = request.CurrentAmount,
-                    Deadline = request.Deadline,
+                    Deadline = request.Deadline?.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
                     IsCompleted = false
                 };
 
                 var postgrest = GetPostgrestClient();
                 var response = await postgrest.Table<SavingsGoal>().Insert(newGoal);
-                return Ok(response.Models.FirstOrDefault());
+                var created = response.Models.FirstOrDefault();
+                return created == null ? BadRequest() : Ok(ToDto(created));
             }
             catch (Exception ex)
             {
@@ -92,11 +83,13 @@ namespace FamilyLedger.Api.Controllers
                 if (request.Name != null) goal.Name = request.Name;
                 if (request.TargetAmount.HasValue) goal.TargetAmount = request.TargetAmount.Value;
                 if (request.CurrentAmount.HasValue) goal.CurrentAmount = request.CurrentAmount.Value;
-                if (request.Deadline.HasValue) goal.Deadline = request.Deadline.Value;
+                if (request.Deadline.HasValue)
+                    goal.Deadline = request.Deadline.Value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
                 if (request.IsCompleted.HasValue) goal.IsCompleted = request.IsCompleted.Value;
 
                 var updateResponse = await postgrest.Table<SavingsGoal>().Update(goal);
-                return Ok(updateResponse.Models.FirstOrDefault());
+                var updated = updateResponse.Models.FirstOrDefault();
+                return updated == null ? BadRequest() : Ok(ToDto(updated));
             }
             catch (Exception ex)
             {
@@ -118,6 +111,18 @@ namespace FamilyLedger.Api.Controllers
                 return BadRequest(new { Message = ex.Message });
             }
         }
+
+        private static SavingsGoalDto ToDto(SavingsGoal goal) => new()
+        {
+            Id = goal.Id,
+            UserId = goal.UserId,
+            Name = goal.Name,
+            TargetAmount = goal.TargetAmount,
+            CurrentAmount = goal.CurrentAmount,
+            Deadline = goal.Deadline.HasValue ? DateOnly.FromDateTime(goal.Deadline.Value) : null,
+            IsCompleted = goal.IsCompleted,
+            CreatedAt = goal.CreatedAt
+        };
     }
 
     public class CreateSavingsRequest
@@ -125,7 +130,7 @@ namespace FamilyLedger.Api.Controllers
         public string Name { get; set; } = string.Empty;
         public decimal TargetAmount { get; set; }
         public decimal CurrentAmount { get; set; }
-        public DateTime? Deadline { get; set; }
+        public DateOnly? Deadline { get; set; }
     }
 
     public class UpdateSavingsRequest
@@ -133,7 +138,7 @@ namespace FamilyLedger.Api.Controllers
         public string? Name { get; set; }
         public decimal? TargetAmount { get; set; }
         public decimal? CurrentAmount { get; set; }
-        public DateTime? Deadline { get; set; }
+        public DateOnly? Deadline { get; set; }
         public bool? IsCompleted { get; set; }
     }
 }

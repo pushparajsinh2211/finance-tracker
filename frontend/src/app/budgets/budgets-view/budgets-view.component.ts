@@ -58,8 +58,9 @@ export class BudgetsViewComponent implements OnInit {
 
     const year = parseInt(this.selectedMonth.split('-')[0]);
     const month = parseInt(this.selectedMonth.split('-')[1]);
-    const startDate = new Date(year, month - 1, 1).toISOString().substring(0, 10);
-    const endDate = new Date(year, month, 0).toISOString().substring(0, 10);
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
     Promise.all([
       firstValueFrom(this.budgetService.getBudgets(this.selectedMonth)),
