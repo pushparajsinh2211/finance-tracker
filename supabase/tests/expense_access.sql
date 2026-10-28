@@ -108,8 +108,8 @@ SELECT throws_ok(
         10,
         CURRENT_DATE
     )$$,
-    '42501',
-    'new row violates row-level security policy for table "expenses"',
+    '23514',
+    'Expense category must be active and belong to the expense family',
     'a user cannot insert an expense for another family'
 );
 
@@ -123,8 +123,8 @@ SELECT throws_ok(
         10,
         CURRENT_DATE
     )$$,
-    '42501',
-    'new row violates row-level security policy for table "expenses"',
+    '23514',
+    'Expense category must be active and belong to the expense family',
     'a user cannot assign another family category'
 );
 
