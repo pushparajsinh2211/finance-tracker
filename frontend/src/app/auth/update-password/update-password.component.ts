@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { Router, RouterModule } from '@angular/router';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
+import { AuthService } from '../auth.service';
 
 @Component({
   selector: 'app-update-password',
@@ -34,7 +35,8 @@ export class UpdatePasswordComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    private router: Router
+    private router: Router,
+    private authService: AuthService
   ) {
     this.passwordForm = this.fb.group({
       password: ['', [Validators.required, Validators.minLength(6)]],
@@ -101,6 +103,8 @@ export class UpdatePasswordComponent implements OnInit {
       const { error } = await this.supabase.auth.updateUser({ password });
       if (error) throw error;
 
+      // Clear both the temporary recovery client and the application's cached JWT.
+      this.authService.logout();
       await this.supabase.auth.signOut();
       window.sessionStorage.removeItem('financehub-password-recovery');
       await this.router.navigate(['/login'], { queryParams: { passwordReset: '1' } });
