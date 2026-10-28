@@ -24,6 +24,13 @@ export class ExpenseFormComponent implements OnInit {
   selectedFile: File | null = null;
   uploadProgress = false;
 
+  private static localDateValue(date = new Date()): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   constructor(
     private fb: FormBuilder,
     private expenseService: ExpenseService,
@@ -33,7 +40,7 @@ export class ExpenseFormComponent implements OnInit {
     this.expenseForm = this.fb.group({
       categoryId: ['', Validators.required],
       amount: ['', [Validators.required, Validators.min(0.01)]],
-      date: [new Date().toISOString().substring(0, 10), Validators.required],
+      date: [ExpenseFormComponent.localDateValue(), Validators.required],
       note: [''],
       isRecurring: [false],
       receiptUrl: ['']
@@ -49,7 +56,7 @@ export class ExpenseFormComponent implements OnInit {
       this.expenseForm.patchValue({
         categoryId: this.initialExpense.categoryId,
         amount: this.initialExpense.amount,
-        date: this.initialExpense.date ? this.initialExpense.date.substring(0, 10) : new Date().toISOString().substring(0, 10),
+        date: this.initialExpense.date ? this.initialExpense.date.substring(0, 10) : ExpenseFormComponent.localDateValue(),
         note: this.initialExpense.note,
         isRecurring: this.initialExpense.isRecurring,
         receiptUrl: this.initialExpense.receiptUrl

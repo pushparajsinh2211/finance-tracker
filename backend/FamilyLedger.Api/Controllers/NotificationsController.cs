@@ -1,4 +1,5 @@
 using FamilyLedger.Api.Models;
+using FamilyLedger.Api.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,20 +19,9 @@ namespace FamilyLedger.Api.Controllers
 
         private Postgrest.Client GetPostgrestClient()
         {
-            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
-            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
-                throw new UnauthorizedAccessException("Missing Authorization header.");
-
-            var token = authHeader.Substring("Bearer ".Length).Trim();
-            var options = new Postgrest.ClientOptions 
-            { 
-                Headers = new Dictionary<string, string> 
-                { 
-                    { "Authorization", $"Bearer {token}" },
-                    { "apikey", _configuration["Supabase:AnonKey"]! }
-                } 
-            };
-            return new Postgrest.Client($"{_configuration["Supabase:Url"]}/rest/v1", options);
+            return AuthenticatedPostgrestClientFactory.Create(
+                _configuration,
+                Request.Headers.Authorization.FirstOrDefault());
         }
 
         [HttpGet]

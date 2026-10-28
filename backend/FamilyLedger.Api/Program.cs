@@ -23,6 +23,7 @@ builder.Services.AddScoped<Supabase.Client>(_ =>
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
         options.Authority = $"{supabaseUrl}/auth/v1";
         options.Audience = "authenticated";
         options.MetadataAddress = $"{supabaseUrl}/auth/v1/.well-known/openid-configuration";

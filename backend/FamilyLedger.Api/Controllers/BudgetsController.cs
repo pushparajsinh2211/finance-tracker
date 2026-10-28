@@ -1,4 +1,5 @@
 using FamilyLedger.Api.Models;
+using FamilyLedger.Api.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -19,20 +20,9 @@ namespace FamilyLedger.Api.Controllers
 
         private Postgrest.Client GetPostgrestClient()
         {
-            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
-            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
-                throw new UnauthorizedAccessException("Missing Authorization header.");
-
-            var token = authHeader.Substring("Bearer ".Length).Trim();
-            var options = new Postgrest.ClientOptions 
-            { 
-                Headers = new Dictionary<string, string> 
-                { 
-                    { "Authorization", $"Bearer {token}" },
-                    { "apikey", _configuration["Supabase:AnonKey"]! }
-                } 
-            };
-            return new Postgrest.Client($"{_configuration["Supabase:Url"]}/rest/v1", options);
+            return AuthenticatedPostgrestClientFactory.Create(
+                _configuration,
+                Request.Headers.Authorization.FirstOrDefault());
         }
 
         [HttpGet]
@@ -49,7 +39,7 @@ namespace FamilyLedger.Api.Controllers
                 }
 
                 var response = await query.Get();
-                return Ok(response.Models);
+                return Ok(response.Models.Select(ToDto));
             }
             catch (Exception ex)
             {
@@ -88,7 +78,8 @@ namespace FamilyLedger.Api.Controllers
                 }
 
                 var response = await postgrest.Table<Budget>().Insert(newBudget);
-                return Ok(response.Models.FirstOrDefault());
+                var created = response.Models.FirstOrDefault();
+                return created == null ? BadRequest() : Ok(ToDto(created));
             }
             catch (Exception ex)
             {
@@ -110,7 +101,8 @@ namespace FamilyLedger.Api.Controllers
                 if (request.Amount.HasValue) budget.Amount = request.Amount.Value;
 
                 var updateResponse = await postgrest.Table<Budget>().Update(budget);
-                return Ok(updateResponse.Models.FirstOrDefault());
+                var updated = updateResponse.Models.FirstOrDefault();
+                return updated == null ? BadRequest() : Ok(ToDto(updated));
             }
             catch (Exception ex)
             {
@@ -132,6 +124,16 @@ namespace FamilyLedger.Api.Controllers
                 return BadRequest(new { Message = ex.Message });
             }
         }
+
+        private static BudgetDto ToDto(Budget budget) => new()
+        {
+            Id = budget.Id,
+            UserId = budget.UserId,
+            CategoryId = budget.CategoryId,
+            Month = budget.Month,
+            Amount = budget.Amount,
+            CreatedAt = budget.CreatedAt
+        };
     }
 
     public class CreateBudgetRequest

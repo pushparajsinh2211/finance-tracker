@@ -1,4 +1,5 @@
 using FamilyLedger.Api.Models;
+using FamilyLedger.Api.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -19,24 +20,13 @@ namespace FamilyLedger.Api.Controllers
 
         private Postgrest.Client GetPostgrestClient()
         {
-            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
-            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
-                throw new UnauthorizedAccessException("Missing Authorization header.");
-
-            var token = authHeader.Substring("Bearer ".Length).Trim();
-            var options = new Postgrest.ClientOptions 
-            { 
-                Headers = new Dictionary<string, string> 
-                { 
-                    { "Authorization", $"Bearer {token}" },
-                    { "apikey", _configuration["Supabase:AnonKey"]! }
-                } 
-            };
-            return new Postgrest.Client($"{_configuration["Supabase:Url"]}/rest/v1", options);
+            return AuthenticatedPostgrestClientFactory.Create(
+                _configuration,
+                Request.Headers.Authorization.FirstOrDefault());
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetExpenses([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate, [FromQuery] Guid? categoryId)
+        public async Task<IActionResult> GetExpenses([FromQuery] DateOnly? startDate, [FromQuery] DateOnly? endDate, [FromQuery] Guid? categoryId)
         {
             try
             {
@@ -62,7 +52,7 @@ namespace FamilyLedger.Api.Controllers
                     MemberUserId = e.UserId,
                     Amount = e.Amount,
                     Note = e.Note ?? string.Empty,
-                    Date = e.Date,
+                    Date = DateOnly.FromDateTime(e.Date),
                     IsRecurring = e.IsRecurring,
                     ReceiptUrl = e.ReceiptUrl ?? string.Empty
                 }).OrderByDescending(e => e.Date).ToList();
@@ -99,7 +89,8 @@ namespace FamilyLedger.Api.Controllers
                     FamilyId = membership.FamilyId,
                     CategoryId = request.CategoryId,
                     Amount = request.Amount,
-                    Date = request.Date ?? DateTime.UtcNow.Date,
+                    Date = (request.Date ?? DateOnly.FromDateTime(DateTime.UtcNow))
+                        .ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
                     Note = request.Note,
                     IsRecurring = request.IsRecurring,
                     ReceiptUrl = request.ReceiptUrl
@@ -118,7 +109,7 @@ namespace FamilyLedger.Api.Controllers
                     MemberUserId = created.UserId,
                     Amount = created.Amount,
                     Note = created.Note ?? string.Empty,
-                    Date = created.Date,
+                    Date = DateOnly.FromDateTime(created.Date),
                     IsRecurring = created.IsRecurring,
                     ReceiptUrl = created.ReceiptUrl ?? string.Empty
                 });
@@ -143,7 +134,8 @@ namespace FamilyLedger.Api.Controllers
 
                 if (request.CategoryId.HasValue) expense.CategoryId = request.CategoryId.Value;
                 if (request.Amount.HasValue) expense.Amount = request.Amount.Value;
-                if (request.Date.HasValue) expense.Date = request.Date.Value;
+                if (request.Date.HasValue)
+                    expense.Date = request.Date.Value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
                 if (request.Note != null) expense.Note = request.Note;
                 if (request.IsRecurring.HasValue) expense.IsRecurring = request.IsRecurring.Value;
                 if (request.ReceiptUrl != null) expense.ReceiptUrl = request.ReceiptUrl;
@@ -158,7 +150,7 @@ namespace FamilyLedger.Api.Controllers
                     MemberUserId = expense.UserId,
                     Amount = expense.Amount,
                     Note = expense.Note ?? string.Empty,
-                    Date = expense.Date,
+                    Date = DateOnly.FromDateTime(expense.Date),
                     IsRecurring = expense.IsRecurring,
                     ReceiptUrl = expense.ReceiptUrl ?? string.Empty
                 });
@@ -196,7 +188,7 @@ namespace FamilyLedger.Api.Controllers
     {
         public Guid CategoryId { get; set; }
         public decimal Amount { get; set; }
-        public DateTime? Date { get; set; }
+        public DateOnly? Date { get; set; }
         public string? Note { get; set; }
         public bool IsRecurring { get; set; }
         public string? ReceiptUrl { get; set; }
@@ -206,7 +198,7 @@ namespace FamilyLedger.Api.Controllers
     {
         public Guid? CategoryId { get; set; }
         public decimal? Amount { get; set; }
-        public DateTime? Date { get; set; }
+        public DateOnly? Date { get; set; }
         public string? Note { get; set; }
         public bool? IsRecurring { get; set; }
         public string? ReceiptUrl { get; set; }

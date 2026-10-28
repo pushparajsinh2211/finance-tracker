@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { Router, RouterModule } from '@angular/router';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
+import { AuthService } from '../auth.service';
 
 @Component({
   selector: 'app-update-password',
@@ -23,7 +24,9 @@ export class UpdatePasswordComponent implements OnInit {
     environment.supabaseKey,
     {
       auth: {
-        persistSession: false,
+        persistSession: true,
+        storage: window.sessionStorage,
+        storageKey: 'financehub-password-recovery',
         autoRefreshToken: false,
         detectSessionInUrl: false
       }
@@ -32,7 +35,8 @@ export class UpdatePasswordComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    private router: Router
+    private router: Router,
+    private authService: AuthService
   ) {
     this.passwordForm = this.fb.group({
       password: ['', [Validators.required, Validators.minLength(6)]],
@@ -57,17 +61,22 @@ export class UpdatePasswordComponent implements OnInit {
       if (code) {
         const { error } = await this.supabase.auth.exchangeCodeForSession(code);
         if (error) throw error;
+        this.clearRecoveryTokens();
       } else if (accessToken && refreshToken) {
         const { error } = await this.supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken
         });
         if (error) throw error;
+        this.clearRecoveryTokens();
       } else {
-        throw new Error('This password reset link is invalid or has expired.');
+        const { data, error } = await this.supabase.auth.getSession();
+        if (error) throw error;
+        if (!data.session) {
+          throw new Error('This password reset link is invalid or has expired.');
+        }
       }
 
-      this.clearRecoveryTokens();
       this.recoveryReady = true;
     } catch (error: any) {
       this.errorMessage = error?.message || 'This password reset link is invalid or has expired.';
@@ -94,7 +103,10 @@ export class UpdatePasswordComponent implements OnInit {
       const { error } = await this.supabase.auth.updateUser({ password });
       if (error) throw error;
 
+      // Clear both the temporary recovery client and the application's cached JWT.
+      this.authService.logout();
       await this.supabase.auth.signOut();
+      window.sessionStorage.removeItem('financehub-password-recovery');
       await this.router.navigate(['/login'], { queryParams: { passwordReset: '1' } });
     } catch (error: any) {
       this.errorMessage = error?.message || 'Password could not be updated. Request a new reset link and try again.';

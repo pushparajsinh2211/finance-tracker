@@ -32,17 +32,39 @@ FamilyLedger is a comprehensive, full-stack personal and family finance manageme
 
 ## 🛠️ Local Development
 
+### Prerequisites
+
+- Docker Desktop
+- Node.js and npm
+- .NET 8 SDK
+
 ### 1. Database
-Make sure you have Supabase CLI installed and linked to your project. Push your local schema structure up into your cloud:
+
+Start the local Supabase stack from the repository root. The local database is isolated from the hosted Supabase project and applies the migrations in `supabase/migrations`.
+
 ```bash
-npx supabase db push
+npx supabase start
 ```
 
 ### 2. Backend (.NET)
-Navigate to the Web API folder and run it:
+
+Create `backend/FamilyLedger.Api/appsettings.Development.json` with the local API URL and anon key shown by `npx supabase status`:
+
+```json
+{
+  "Supabase": {
+    "Url": "http://127.0.0.1:54321",
+    "AnonKey": "YOUR_LOCAL_ANON_KEY"
+  }
+}
+```
+
+Then run the API from the repository root:
+
 ```bash
-cd backend/FamilyLedger.Api
-dotnet run
+ASPNETCORE_ENVIRONMENT=Development \
+ASPNETCORE_URLS=http://127.0.0.1:5099 \
+dotnet run --project backend/FamilyLedger.Api/FamilyLedger.Api.csproj --no-launch-profile
 ```
 
 To enable family invitation emails, configure SMTP settings through environment variables:
@@ -58,12 +80,18 @@ Email__Smtp__Password=your-smtp-password
 If these values are not configured, the app will ask the Family Head to copy and share the invite code instead of pretending an email was sent.
 
 ### 3. Frontend (Angular)
-Serve the application locally:
+
+Install dependencies once, then start Angular. Development builds automatically use the local URLs from `environment.development.ts`.
+
 ```bash
 cd frontend
+npm ci
 npm start
 ```
-Your UI will be successfully running at `http://localhost:4200`!
+
+Open `http://127.0.0.1:4200`.
+
+To stop the local database services later, run `npx supabase stop` from the repository root.
 
 ---
 

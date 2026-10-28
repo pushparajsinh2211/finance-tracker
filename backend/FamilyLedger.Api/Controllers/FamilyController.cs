@@ -1,4 +1,5 @@
 using FamilyLedger.Api.Models;
+using FamilyLedger.Api.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
@@ -21,25 +22,9 @@ namespace FamilyLedger.Api.Controllers
 
         private Postgrest.Client GetPostgrestClient()
         {
-            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
-            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
-            {
-                throw new UnauthorizedAccessException("Missing or invalid Authorization header.");
-            }
-            var token = authHeader.Substring("Bearer ".Length).Trim();
-            
-            var url = _configuration["Supabase:Url"];
-            var key = _configuration["Supabase:AnonKey"];
-
-            var options = new Postgrest.ClientOptions 
-            { 
-                Headers = new Dictionary<string, string> 
-                { 
-                    { "Authorization", $"Bearer {token}" },
-                    { "apikey", key! }
-                } 
-            };
-            return new Postgrest.Client($"{url}/rest/v1", options);
+            return AuthenticatedPostgrestClientFactory.Create(
+                _configuration,
+                Request.Headers.Authorization.FirstOrDefault());
         }
 
         private bool TryGetCurrentUserId(out Guid userId)
@@ -50,7 +35,9 @@ namespace FamilyLedger.Api.Controllers
 
         private async Task<FamilyMember?> GetCurrentMembership(Postgrest.Client postgrest, Guid userId)
         {
-            var fmResp = await postgrest.Table<FamilyMember>().Where(f => f.UserId == userId).Get();
+            var fmResp = await postgrest.Table<FamilyMember>()
+                .Filter("user_id", Postgrest.Constants.Operator.Equals, userId.ToString())
+                .Get();
             return fmResp.Models.FirstOrDefault();
         }
 
@@ -121,7 +108,13 @@ namespace FamilyLedger.Api.Controllers
 
                 await postgrest.Table<Category>().Insert(categoriesToInsert);
 
-                return Ok(createdFamily);
+                return Ok(new FamilyDto
+                {
+                    Id = createdFamily.Id,
+                    Name = createdFamily.Name,
+                    InviteCode = createdFamily.InviteCode,
+                    HeadUserId = createdFamily.HeadUserId
+                });
             }
             catch (Exception ex)
             {
@@ -173,26 +166,21 @@ namespace FamilyLedger.Api.Controllers
         {
             try
             {
-                if (!TryGetCurrentUserId(out var userId))
+                if (!TryGetCurrentUserId(out _))
                     return Unauthorized("User ID not found.");
 
                 var postgrest = GetPostgrestClient();
-                var membership = await GetCurrentMembership(postgrest, userId);
+                var rpcResult = await postgrest.Rpc(
+                    "get_my_family_details",
+                    new Dictionary<string, object>());
 
-                if (membership == null) return NotFound(new { Message = "User is not a member of any family." });
+                var content = rpcResult.Content?.Trim();
+                if (string.IsNullOrWhiteSpace(content) || content == "null")
+                {
+                    return NotFound(new { Message = "User is not a member of any family." });
+                }
 
-                var familyResp = await postgrest.Table<Family>().Where(f => f.Id == membership.FamilyId).Get();
-                var family = familyResp.Models.FirstOrDefault();
-                
-                if (family == null) return NotFound();
-
-                return Ok(new FamilyDto 
-                { 
-                    Id = family.Id, 
-                    Name = family.Name, 
-                    InviteCode = IsHead(membership) ? family.InviteCode : string.Empty,
-                    HeadUserId = family.HeadUserId 
-                });
+                return Content(content, "application/json");
             }
             catch (Exception ex)
             {
