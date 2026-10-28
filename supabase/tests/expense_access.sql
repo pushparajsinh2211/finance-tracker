@@ -158,16 +158,16 @@ SELECT throws_ok(
 );
 
 SELECT throws_ok(
-    $UPDATE public.expenses
+    $$UPDATE public.expenses
       SET category_id = '41000000-0000-0000-0000-000000000003'
-      WHERE id = '51000000-0000-0000-0000-000000000001'$,
+      WHERE id = '51000000-0000-0000-0000-000000000001'$$,
     '23514',
     NULL,
     'an archived category cannot be newly assigned'
 );
 
 SELECT throws_ok(
-    $UPDATE public.expenses
+    $$UPDATE public.expenses
       SET amount = -1
       WHERE id = '51000000-0000-0000-0000-000000000001'$$,
     '23514',
@@ -188,7 +188,7 @@ SELECT set_config(
 );
 
 SELECT lives_ok(
-    $UPDATE public.expenses
+    $$UPDATE public.expenses
       SET deleted_at = now()
       WHERE id = '51000000-0000-0000-0000-000000000001'$$,
     'the owner can soft-delete their expense'
