@@ -93,6 +93,18 @@ Open `http://127.0.0.1:4200`.
 
 To stop the local database services later, run `npx supabase stop` from the repository root.
 
+
+## 🚢 Production Database Deployment
+
+Hosted Supabase migrations are deployed through the guarded **Deploy Supabase production** GitHub Actions workflow.
+
+Before the first deployment, add these encrypted repository or `production` environment secrets in GitHub:
+
+- `SUPABASE_ACCESS_TOKEN`: a Supabase personal access token scoped to the production project
+- `SUPABASE_DB_PASSWORD`: the database password for project `ojyqclewkgbrhuaehsvb`
+
+Then open **Actions → Deploy Supabase production → Run workflow**, enter `DEPLOY`, and run it. The workflow first performs a migration dry run and only then applies pending migrations with `supabase db push`. It never resets or recreates the hosted database.
+
 ---
 
 *FamilyLedger was successfully architected using strict free-tier deployment guidelines ensuring zero operational overhead cost.*
