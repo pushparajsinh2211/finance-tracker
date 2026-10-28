@@ -35,9 +35,42 @@ CREATE POLICY "Users manage own current-family expenses"
             FROM public.categories AS category
             WHERE category.id = expenses.category_id
               AND category.family_id = expenses.family_id
-              AND NOT category.is_archived
         )
     );
+
+CREATE OR REPLACE FUNCTION public.validate_expense_category_assignment()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+BEGIN
+    IF TG_OP = 'INSERT'
+       OR NEW.category_id IS DISTINCT FROM OLD.category_id
+       OR NEW.family_id IS DISTINCT FROM OLD.family_id THEN
+        IF NOT EXISTS (
+            SELECT 1
+            FROM public.categories AS category
+            WHERE category.id = NEW.category_id
+              AND category.family_id = NEW.family_id
+              AND NOT category.is_archived
+        ) THEN
+            RAISE EXCEPTION 'Expense category must be active and belong to the expense family'
+                USING ERRCODE = '23514';
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END
+$$;
+
+DROP TRIGGER IF EXISTS validate_expense_category_assignment
+    ON public.expenses;
+
+CREATE TRIGGER validate_expense_category_assignment
+    BEFORE INSERT OR UPDATE OF category_id, family_id
+    ON public.expenses
+    FOR EACH ROW
+    EXECUTE FUNCTION public.validate_expense_category_assignment();
 
 DO $$
 BEGIN

@@ -117,7 +117,7 @@ export class ExpenseFormComponent implements OnInit {
 
       const payload = {
         ...this.expenseForm.value,
-        receiptUrl: uploadedPath || (this.removeExistingReceipt ? null : oldReceiptPath),
+        receiptUrl: uploadedPath || (this.removeExistingReceipt ? null : oldReceiptPath || null),
         removeReceipt: this.removeExistingReceipt && !uploadedPath
       };
 

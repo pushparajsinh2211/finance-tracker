@@ -3,7 +3,7 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 SET search_path = public, extensions;
 
-SELECT plan(10);
+SELECT plan(11);
 
 INSERT INTO auth.users (id, email)
 VALUES
@@ -66,6 +66,14 @@ INSERT INTO public.categories (
         '#EF4444',
         true,
         false
+    ),
+    (
+        '41000000-0000-0000-0000-000000000003',
+        '21000000-0000-0000-0000-000000000001',
+        'Archived Category',
+        '#64748B',
+        false,
+        true
     );
 
 SET LOCAL ROLE authenticated;
@@ -150,7 +158,16 @@ SELECT throws_ok(
 );
 
 SELECT throws_ok(
-    $$UPDATE public.expenses
+    $UPDATE public.expenses
+      SET category_id = '41000000-0000-0000-0000-000000000003'
+      WHERE id = '51000000-0000-0000-0000-000000000001'$,
+    '23514',
+    NULL,
+    'an archived category cannot be newly assigned'
+);
+
+SELECT throws_ok(
+    $UPDATE public.expenses
       SET amount = -1
       WHERE id = '51000000-0000-0000-0000-000000000001'$$,
     '23514',
@@ -158,8 +175,20 @@ SELECT throws_ok(
     'negative expense amounts are rejected'
 );
 
+RESET ROLE;
+UPDATE public.categories
+SET is_archived = true
+WHERE id = '41000000-0000-0000-0000-000000000001';
+
+SET LOCAL ROLE authenticated;
+SELECT set_config(
+    'request.jwt.claim.sub',
+    '11000000-0000-0000-0000-000000000001',
+    true
+);
+
 SELECT lives_ok(
-    $$UPDATE public.expenses
+    $UPDATE public.expenses
       SET deleted_at = now()
       WHERE id = '51000000-0000-0000-0000-000000000001'$$,
     'the owner can soft-delete their expense'
