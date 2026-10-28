@@ -23,6 +23,10 @@ export class AuthService {
     return window.location.origin + '/login?confirmed=1';
   }
 
+  private passwordRecoveryRedirect(): string {
+    return window.location.origin + '/update-password';
+  }
+
   isLoggedIn(): boolean {
     return !!this.getToken();
   }
@@ -66,7 +70,10 @@ export class AuthService {
   }
 
   resetPassword(email: string) {
-    return this.http.post(`${this.apiUrl}/reset-password`, { email });
+    return this.http.post(`${this.apiUrl}/reset-password`, {
+      email,
+      redirectTo: this.passwordRecoveryRedirect()
+    });
   }
 
   logout() {
