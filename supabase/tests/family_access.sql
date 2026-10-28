@@ -3,7 +3,7 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 SET search_path = public, extensions;
 
-SELECT plan(12);
+SELECT plan(13);
 
 INSERT INTO auth.users (id, email)
 VALUES
@@ -93,12 +93,15 @@ SELECT is(
     'a non-head member cannot query the family row directly'
 );
 
-SELECT throws_ok(
-    $$UPDATE public.family_members
-      SET relation = 'Head'
-      WHERE user_id = auth.uid()$$,
-    '42501',
-    'new row violates row-level security policy for table "family_members"',
+UPDATE public.family_members
+SET relation = 'Head'
+WHERE user_id = auth.uid();
+
+SELECT is(
+    (SELECT relation
+     FROM public.family_members
+     WHERE user_id = auth.uid()),
+    'Member',
     'a member cannot promote themselves'
 );
 
@@ -158,11 +161,16 @@ SELECT lives_ok(
     'the family head can change a member dependent status'
 );
 
-SELECT throws_ok(
-    $$DELETE FROM public.family_members
-      WHERE user_id = '10000000-0000-0000-0000-000000000001'$$,
-    '42501',
-    'new row violates row-level security policy for table "family_members"',
+DELETE FROM public.family_members
+WHERE user_id = '10000000-0000-0000-0000-000000000001';
+
+SELECT ok(
+    EXISTS (
+        SELECT 1
+        FROM public.family_members
+        WHERE user_id = '10000000-0000-0000-0000-000000000001'
+          AND lower(relation) = 'head'
+    ),
     'the family head cannot delete their own head membership'
 );
 
