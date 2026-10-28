@@ -8,7 +8,8 @@ public sealed record StatementTransaction(
     string? ExternalReference,
     string? PaymentRail,
     string TransactionType,
-    bool NeedsReview);
+    bool NeedsReview,
+    int OccurrenceIndex = 1);
 
 public sealed record StatementParseResult(
     string Parser,

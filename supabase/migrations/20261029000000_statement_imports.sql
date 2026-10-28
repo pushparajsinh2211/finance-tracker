@@ -88,6 +88,7 @@ DECLARE
     payment_rail_value TEXT;
     transaction_type_value TEXT;
     needs_review_value BOOLEAN;
+    occurrence_index_value INTEGER;
     account_reference_value TEXT;
 BEGIN
     IF current_user_id IS NULL THEN
@@ -234,6 +235,10 @@ BEGIN
                 (transaction_item ->> 'needsReview')::boolean,
                 false
             );
+            occurrence_index_value := coalesce(
+                (transaction_item ->> 'occurrenceIndex')::integer,
+                1
+            );
         EXCEPTION WHEN OTHERS THEN
             RAISE EXCEPTION 'Transaction row % is malformed', received_count_value
                 USING ERRCODE = '22023';
@@ -243,6 +248,8 @@ BEGIN
            OR direction_value NOT IN ('debit', 'credit')
            OR narration_value IS NULL
            OR narration_value = ''
+           OR occurrence_index_value < 1
+           OR occurrence_index_value > 5000
            OR transaction_type_value NOT IN (
                'purchase', 'income', 'transfer', 'fee',
                'refund', 'cash', 'adjustment'
@@ -287,7 +294,8 @@ BEGIN
                 amount_value::text || '|' ||
                 direction_value || '|' ||
                 lower(narration_value) || '|' ||
-                coalesce(external_reference_value, ''),
+                coalesce(external_reference_value, '') || '|' ||
+                occurrence_index_value::text,
                 'sha256'
             ),
             'hex'

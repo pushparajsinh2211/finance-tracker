@@ -44,7 +44,7 @@
         *ngIf="source.id === 'upi'"
         class="btn btn-secondary"
         type="button"
-        (click)="sourceType = 'bank'; importPanel.scrollIntoView({ behavior: 'smooth' })">
+        (click)="chooseUpiImport()">
         Import linked bank statement
       </button>
     </article>

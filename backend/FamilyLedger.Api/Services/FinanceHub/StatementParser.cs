@@ -122,7 +122,7 @@ public sealed partial class StatementParser : IStatementParser
             ParserVersion,
             "csv",
             checksum,
-            transactions,
+            AddOccurrenceIndexes(transactions),
             errors.Take(100).ToArray());
     }
 
@@ -237,7 +237,7 @@ public sealed partial class StatementParser : IStatementParser
             ParserVersion,
             "pdf",
             checksum,
-            transactions,
+            AddOccurrenceIndexes(transactions),
             errors);
     }
 
@@ -252,6 +252,9 @@ public sealed partial class StatementParser : IStatementParser
             return false;
 
         var narration = match.Groups["narration"].Value.Trim();
+        if (AmountTokenRegex().IsMatch(narration))
+            return false;
+
         var amountText = match.Groups["amount"].Value;
         var marker = match.Groups["marker"].Value;
         if (!TryParseAmount(amountText, out var signedAmount) || signedAmount == 0)
@@ -286,6 +289,32 @@ public sealed partial class StatementParser : IStatementParser
             needsReview);
 
         return true;
+    }
+
+
+    private static IReadOnlyList<StatementTransaction> AddOccurrenceIndexes(
+        IEnumerable<StatementTransaction> transactions)
+    {
+        var occurrences = new Dictionary<string, int>(StringComparer.Ordinal);
+        var result = new List<StatementTransaction>();
+
+        foreach (var transaction in transactions)
+        {
+            var signature = string.Join(
+                "|",
+                transaction.OccurredAt.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture),
+                transaction.Amount.ToString("0.00", CultureInfo.InvariantCulture),
+                transaction.Direction,
+                transaction.Narration.Trim().ToLowerInvariant(),
+                transaction.ExternalReference?.Trim().ToLowerInvariant() ?? "");
+
+            occurrences.TryGetValue(signature, out var current);
+            var occurrence = current + 1;
+            occurrences[signature] = occurrence;
+            result.Add(transaction with { OccurrenceIndex = occurrence });
+        }
+
+        return result;
     }
 
     private static string DecodeText(byte[] bytes)
@@ -484,4 +513,7 @@ public sealed partial class StatementParser : IStatementParser
 
     [GeneratedRegex("\\b[0-9]{10,22}\\b")]
     private static partial Regex ReferenceRegex();
+
+    [GeneratedRegex("(?<![0-9])[0-9][0-9,]*\\.[0-9]{2}(?![0-9])")]
+    private static partial Regex AmountTokenRegex();
 }

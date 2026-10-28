@@ -118,7 +118,8 @@ public sealed class FinanceHubImportsController : ControllerBase
                     externalReference = transaction.ExternalReference,
                     paymentRail = transaction.PaymentRail,
                     transactionType = transaction.TransactionType,
-                    needsReview = transaction.NeedsReview
+                    needsReview = transaction.NeedsReview,
+                    occurrenceIndex = transaction.OccurrenceIndex
                 })
             };
 

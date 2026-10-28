@@ -3,7 +3,7 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 SET search_path = public, extensions;
 
-SELECT plan(9);
+SELECT plan(11);
 
 INSERT INTO auth.users (id, email)
 VALUES
@@ -148,6 +148,50 @@ SELECT is(
     ),
     50000::numeric,
     'clients cannot directly rewrite canonical imported transactions'
+);
+
+
+SELECT lives_ok(
+    $SELECT public.import_financehub_statement(
+        'bank',
+        'csv',
+        'Primary Bank',
+        'xxxx1234',
+        repeat('c', 64),
+        '[
+          {
+            "occurredAt": "2026-10-04T04:30:00Z",
+            "amount": 99.00,
+            "direction": "debit",
+            "narration": "Two identical bus tickets",
+            "paymentRail": "CARD",
+            "transactionType": "purchase",
+            "needsReview": false,
+            "occurrenceIndex": 1
+          },
+          {
+            "occurredAt": "2026-10-04T04:30:00Z",
+            "amount": 99.00,
+            "direction": "debit",
+            "narration": "Two identical bus tickets",
+            "paymentRail": "CARD",
+            "transactionType": "purchase",
+            "needsReview": false,
+            "occurrenceIndex": 2
+          }
+        ]'::jsonb
+    )$,
+    'legitimate repeated rows import atomically'
+);
+
+SELECT is(
+    (
+        SELECT COUNT(*)
+        FROM public.financehub_transactions
+        WHERE narration = 'Two identical bus tickets'
+    ),
+    2::bigint,
+    'row occurrence identity preserves legitimate repeated purchases'
 );
 
 RESET ROLE;

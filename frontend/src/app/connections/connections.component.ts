@@ -112,6 +112,14 @@ export class ConnectionsComponent implements OnInit {
     setTimeout(() => this.importPanel?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
 
+  chooseUpiImport(): void {
+    this.sourceType = 'bank';
+    this.preview = null;
+    this.importResult = null;
+    this.importError = '';
+    setTimeout(() => this.importPanel?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }
+
   fileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.selectedFile = input.files?.item(0) ?? null;
