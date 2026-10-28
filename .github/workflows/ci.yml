@@ -52,3 +52,5 @@ jobs:
         run: supabase start
       - name: Rebuild database from the complete migration chain
         run: supabase db reset --local
+      - name: Run family authorization policy tests
+        run: supabase test db

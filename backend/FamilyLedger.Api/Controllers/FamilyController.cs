@@ -166,26 +166,21 @@ namespace FamilyLedger.Api.Controllers
         {
             try
             {
-                if (!TryGetCurrentUserId(out var userId))
+                if (!TryGetCurrentUserId(out _))
                     return Unauthorized("User ID not found.");
 
                 var postgrest = GetPostgrestClient();
-                var membership = await GetCurrentMembership(postgrest, userId);
+                var rpcResult = await postgrest.Rpc(
+                    "get_my_family_details",
+                    new Dictionary<string, object>());
 
-                if (membership == null) return NotFound(new { Message = "User is not a member of any family." });
+                var content = rpcResult.Content?.Trim();
+                if (string.IsNullOrWhiteSpace(content) || content == "null")
+                {
+                    return NotFound(new { Message = "User is not a member of any family." });
+                }
 
-                var familyResp = await postgrest.Table<Family>().Where(f => f.Id == membership.FamilyId).Get();
-                var family = familyResp.Models.FirstOrDefault();
-                
-                if (family == null) return NotFound();
-
-                return Ok(new FamilyDto 
-                { 
-                    Id = family.Id, 
-                    Name = family.Name, 
-                    InviteCode = IsHead(membership) ? family.InviteCode : string.Empty,
-                    HeadUserId = family.HeadUserId 
-                });
+                return Content(content, "application/json");
             }
             catch (Exception ex)
             {
