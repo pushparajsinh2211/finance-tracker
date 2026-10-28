@@ -18,8 +18,8 @@ export class StorageService {
   constructor(private authService: AuthService) { }
 
   async uploadReceipt(file: File): Promise<string> {
-    const token = this.authService.getAuthToken();
-    if (!token) throw new Error('No auth token available.');
+    const { userId, supabase } = this.getStorageContext();
+
     if (!this.allowedReceiptTypes.has(file.type)) {
       throw new Error('Receipts must be JPEG, PNG, WebP, or PDF files.');
     }
@@ -27,8 +27,6 @@ export class StorageService {
       throw new Error('Receipts must be 10 MB or smaller.');
     }
 
-    const userId = this.getUserId(token);
-    const supabase = this.createAuthenticatedClient(token);
     const fileExt = file.name.split('.').pop()?.toLowerCase() || 'file';
     const fileName = Date.now() + '-' + Math.random().toString(36).slice(2) + '.' + fileExt;
     const filePath = userId + '/' + fileName;
@@ -39,26 +37,45 @@ export class StorageService {
     });
     if (error) throw error;
 
-    // Store the private object path. A signed URL is created only when the receipt is viewed.
     return filePath;
   }
 
   async getReceiptUrl(filePath: string): Promise<string> {
-    const token = this.authService.getAuthToken();
-    if (!token) throw new Error('No auth token available.');
+    const { userId, supabase } = this.getStorageContext();
+    this.assertOwnedReceiptPath(filePath, userId);
 
-    const userId = this.getUserId(token);
-    if (!filePath.startsWith(userId + '/')) {
-      throw new Error('Receipt access is not allowed.');
-    }
-
-    const supabase = this.createAuthenticatedClient(token);
     const { data, error } = await supabase.storage
       .from('receipts')
       .createSignedUrl(filePath, 300);
 
     if (error) throw error;
     return data.signedUrl;
+  }
+
+  async deleteReceipt(filePath: string): Promise<void> {
+    if (!filePath) return;
+
+    const { userId, supabase } = this.getStorageContext();
+    this.assertOwnedReceiptPath(filePath, userId);
+
+    const { error } = await supabase.storage.from('receipts').remove([filePath]);
+    if (error) throw error;
+  }
+
+  private getStorageContext(): { userId: string; supabase: SupabaseClient } {
+    const token = this.authService.getAuthToken();
+    if (!token) throw new Error('No auth token available.');
+
+    return {
+      userId: this.getUserId(token),
+      supabase: this.createAuthenticatedClient(token)
+    };
+  }
+
+  private assertOwnedReceiptPath(filePath: string, userId: string): void {
+    if (!filePath.startsWith(userId + '/') || filePath.includes('..') || filePath.includes('\\')) {
+      throw new Error('Receipt access is not allowed.');
+    }
   }
 
   private getUserId(token: string): string {

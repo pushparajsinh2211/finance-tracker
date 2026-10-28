@@ -1,5 +1,5 @@
-using FamilyLedger.Api.Models;
 using FamilyLedger.Api.Infrastructure;
+using FamilyLedger.Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -11,6 +11,7 @@ namespace FamilyLedger.Api.Controllers
     [Route("api/[controller]")]
     public class ExpensesController : ControllerBase
     {
+        private const int MaxNoteLength = 200;
         private readonly IConfiguration _configuration;
 
         public ExpensesController(IConfiguration configuration)
@@ -31,33 +32,22 @@ namespace FamilyLedger.Api.Controllers
             try
             {
                 var postgrest = GetPostgrestClient();
-                // RLS automatically limits to the user's own expenses.
                 var query = postgrest.Table<Expense>().Filter("deleted_at", Postgrest.Constants.Operator.Is, "null");
 
                 if (startDate.HasValue)
                     query = query.Filter("date", Postgrest.Constants.Operator.GreaterThanOrEqual, startDate.Value.ToString("yyyy-MM-dd"));
-                
+
                 if (endDate.HasValue)
                     query = query.Filter("date", Postgrest.Constants.Operator.LessThanOrEqual, endDate.Value.ToString("yyyy-MM-dd"));
-                
+
                 if (categoryId.HasValue)
                     query = query.Filter("category_id", Postgrest.Constants.Operator.Equals, categoryId.Value.ToString());
 
                 var response = await query.Get();
-                var dtos = response.Models.Select(e => new ExpenseDto
-                {
-                    Id = e.Id,
-                    FamilyId = e.FamilyId,
-                    CategoryId = e.CategoryId,
-                    MemberUserId = e.UserId,
-                    Amount = e.Amount,
-                    Note = e.Note ?? string.Empty,
-                    Date = DateOnly.FromDateTime(e.Date),
-                    IsRecurring = e.IsRecurring,
-                    ReceiptUrl = e.ReceiptUrl ?? string.Empty
-                }).OrderByDescending(e => e.Date).ToList();
-
-                return Ok(dtos);
+                return Ok(response.Models
+                    .Select(ToDto)
+                    .OrderByDescending(expense => expense.Date)
+                    .ToList());
             }
             catch (Exception ex)
             {
@@ -68,20 +58,22 @@ namespace FamilyLedger.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> AddExpense([FromBody] CreateExpenseRequest request)
         {
+            if (!TryGetCurrentUserId(out var userId))
+                return Unauthorized(new { Message = "User ID not found in token." });
+
+            var validationMessage = ValidateExpenseFields(request.Amount, request.Note, request.ReceiptUrl, userId);
+            if (validationMessage != null)
+                return BadRequest(new { Message = validationMessage });
+
             try
             {
-                var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-                if (string.IsNullOrEmpty(userIdString) || !Guid.TryParse(userIdString, out var userId))
-                {
-                    return Unauthorized(new { Message = "User ID not found in token." });
-                }
-
                 var postgrest = GetPostgrestClient();
-                var familyMemberResponse = await postgrest.Table<FamilyMember>().Where(f => f.UserId == userId).Get();
-                var membership = familyMemberResponse.Models.FirstOrDefault();
-
+                var membership = await GetCurrentMembership(postgrest, userId);
                 if (membership == null)
                     return BadRequest(new { Message = "User is not a member of any family." });
+
+                if (!await CategoryBelongsToFamily(postgrest, request.CategoryId, membership.FamilyId))
+                    return BadRequest(new { Message = "Category does not belong to your family." });
 
                 var newExpense = new Expense
                 {
@@ -91,28 +83,16 @@ namespace FamilyLedger.Api.Controllers
                     Amount = request.Amount,
                     Date = (request.Date ?? DateOnly.FromDateTime(DateTime.UtcNow))
                         .ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
-                    Note = request.Note,
+                    Note = NormalizeNote(request.Note),
                     IsRecurring = request.IsRecurring,
-                    ReceiptUrl = request.ReceiptUrl
+                    ReceiptUrl = NormalizeReceiptPath(request.ReceiptUrl)
                 };
 
                 var response = await postgrest.Table<Expense>().Insert(newExpense);
                 var created = response.Models.FirstOrDefault();
-
-                if (created == null) return BadRequest();
-
-                return Ok(new ExpenseDto
-                {
-                    Id = created.Id,
-                    FamilyId = created.FamilyId,
-                    CategoryId = created.CategoryId,
-                    MemberUserId = created.UserId,
-                    Amount = created.Amount,
-                    Note = created.Note ?? string.Empty,
-                    Date = DateOnly.FromDateTime(created.Date),
-                    IsRecurring = created.IsRecurring,
-                    ReceiptUrl = created.ReceiptUrl ?? string.Empty
-                });
+                return created == null
+                    ? BadRequest(new { Message = "Expense could not be created." })
+                    : Ok(ToDto(created));
             }
             catch (Exception ex)
             {
@@ -123,37 +103,51 @@ namespace FamilyLedger.Api.Controllers
         [HttpPatch("{id}")]
         public async Task<IActionResult> EditExpense(Guid id, [FromBody] UpdateExpenseRequest request)
         {
+            if (!TryGetCurrentUserId(out var userId))
+                return Unauthorized(new { Message = "User ID not found in token." });
+
+            if (request.Amount.HasValue && request.Amount.Value <= 0)
+                return BadRequest(new { Message = "Amount must be greater than zero." });
+
+            if (request.Note != null && request.Note.Length > MaxNoteLength)
+                return BadRequest(new { Message = $"Note must be {MaxNoteLength} characters or fewer." });
+
+            if (!request.RemoveReceipt && request.ReceiptUrl != null && !IsOwnedReceiptPath(request.ReceiptUrl, userId))
+                return BadRequest(new { Message = "Receipt path is invalid." });
+
             try
             {
                 var postgrest = GetPostgrestClient();
-                
-                var expenseResponse = await postgrest.Table<Expense>().Where(e => e.Id == id).Get();
+                var membership = await GetCurrentMembership(postgrest, userId);
+                if (membership == null)
+                    return BadRequest(new { Message = "User is not a member of any family." });
+
+                var expenseResponse = await postgrest.Table<Expense>().Where(expense => expense.Id == id).Get();
                 var expense = expenseResponse.Models.FirstOrDefault();
                 if (expense == null || expense.DeletedAt != null)
                     return NotFound(new { Message = "Expense not found." });
 
-                if (request.CategoryId.HasValue) expense.CategoryId = request.CategoryId.Value;
+                if (request.CategoryId.HasValue)
+                {
+                    if (!await CategoryBelongsToFamily(postgrest, request.CategoryId.Value, membership.FamilyId))
+                        return BadRequest(new { Message = "Category does not belong to your family." });
+
+                    expense.CategoryId = request.CategoryId.Value;
+                }
+
                 if (request.Amount.HasValue) expense.Amount = request.Amount.Value;
                 if (request.Date.HasValue)
                     expense.Date = request.Date.Value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
-                if (request.Note != null) expense.Note = request.Note;
+                if (request.Note != null) expense.Note = NormalizeNote(request.Note);
                 if (request.IsRecurring.HasValue) expense.IsRecurring = request.IsRecurring.Value;
-                if (request.ReceiptUrl != null) expense.ReceiptUrl = request.ReceiptUrl;
+
+                if (request.RemoveReceipt)
+                    expense.ReceiptUrl = null;
+                else if (request.ReceiptUrl != null)
+                    expense.ReceiptUrl = NormalizeReceiptPath(request.ReceiptUrl);
 
                 await postgrest.Table<Expense>().Update(expense);
-                
-                return Ok(new ExpenseDto
-                {
-                    Id = expense.Id,
-                    FamilyId = expense.FamilyId,
-                    CategoryId = expense.CategoryId,
-                    MemberUserId = expense.UserId,
-                    Amount = expense.Amount,
-                    Note = expense.Note ?? string.Empty,
-                    Date = DateOnly.FromDateTime(expense.Date),
-                    IsRecurring = expense.IsRecurring,
-                    ReceiptUrl = expense.ReceiptUrl ?? string.Empty
-                });
+                return Ok(ToDto(expense));
             }
             catch (Exception ex)
             {
@@ -166,11 +160,11 @@ namespace FamilyLedger.Api.Controllers
         {
             try
             {
-                // Soft delete
                 var postgrest = GetPostgrestClient();
-                var expenseResponse = await postgrest.Table<Expense>().Where(e => e.Id == id).Get();
+                var expenseResponse = await postgrest.Table<Expense>().Where(expense => expense.Id == id).Get();
                 var expense = expenseResponse.Models.FirstOrDefault();
-                if (expense == null) return NotFound(new { Message = "Expense not found." });
+                if (expense == null || expense.DeletedAt != null)
+                    return NotFound(new { Message = "Expense not found." });
 
                 expense.DeletedAt = DateTime.UtcNow;
                 await postgrest.Table<Expense>().Update(expense);
@@ -181,6 +175,80 @@ namespace FamilyLedger.Api.Controllers
             {
                 return BadRequest(new { Message = ex.Message });
             }
+        }
+
+        private bool TryGetCurrentUserId(out Guid userId)
+        {
+            var value = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+            return Guid.TryParse(value, out userId);
+        }
+
+        private static async Task<FamilyMember?> GetCurrentMembership(Postgrest.Client postgrest, Guid userId)
+        {
+            var response = await postgrest.Table<FamilyMember>().Where(member => member.UserId == userId).Get();
+            return response.Models.FirstOrDefault();
+        }
+
+        private static async Task<bool> CategoryBelongsToFamily(Postgrest.Client postgrest, Guid categoryId, Guid familyId)
+        {
+            if (categoryId == Guid.Empty)
+                return false;
+
+            var response = await postgrest.Table<Category>().Where(category => category.Id == categoryId).Get();
+            return response.Models.Any(category => category.FamilyId == familyId && !category.IsArchived);
+        }
+
+        private static string? ValidateExpenseFields(decimal amount, string? note, string? receiptPath, Guid userId)
+        {
+            if (amount <= 0)
+                return "Amount must be greater than zero.";
+
+            if (note != null && note.Length > MaxNoteLength)
+                return $"Note must be {MaxNoteLength} characters or fewer.";
+
+            if (receiptPath != null && !IsOwnedReceiptPath(receiptPath, userId))
+                return "Receipt path is invalid.";
+
+            return null;
+        }
+
+        private static bool IsOwnedReceiptPath(string receiptPath, Guid userId)
+        {
+            if (string.IsNullOrWhiteSpace(receiptPath)
+                || receiptPath.Contains("..", StringComparison.Ordinal)
+                || receiptPath.Contains('\\')
+                || Uri.IsWellFormedUriString(receiptPath, UriKind.Absolute))
+            {
+                return false;
+            }
+
+            return receiptPath.StartsWith(userId.ToString() + "/", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string? NormalizeNote(string? note)
+        {
+            return string.IsNullOrWhiteSpace(note) ? null : note.Trim();
+        }
+
+        private static string? NormalizeReceiptPath(string? receiptPath)
+        {
+            return string.IsNullOrWhiteSpace(receiptPath) ? null : receiptPath.Trim();
+        }
+
+        private static ExpenseDto ToDto(Expense expense)
+        {
+            return new ExpenseDto
+            {
+                Id = expense.Id,
+                FamilyId = expense.FamilyId,
+                CategoryId = expense.CategoryId,
+                MemberUserId = expense.UserId,
+                Amount = expense.Amount,
+                Note = expense.Note ?? string.Empty,
+                Date = DateOnly.FromDateTime(expense.Date),
+                IsRecurring = expense.IsRecurring,
+                ReceiptUrl = expense.ReceiptUrl ?? string.Empty
+            };
         }
     }
 
@@ -202,5 +270,6 @@ namespace FamilyLedger.Api.Controllers
         public string? Note { get; set; }
         public bool? IsRecurring { get; set; }
         public string? ReceiptUrl { get; set; }
+        public bool RemoveReceipt { get; set; }
     }
 }
