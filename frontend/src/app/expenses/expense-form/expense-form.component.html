@@ -37,12 +37,21 @@
 
         <div class="form-group">
             <label class="form-label">Attach Receipt (Optional)</label>
-            <input type="file" class="form-control" (change)="onFileSelected($event)" accept="image/*,.pdf"
-                style="padding: 0.5rem 1rem;">
-            <div *ngIf="expenseForm.get('receiptUrl')?.value" style="margin-top: 0.5rem;">
-                <a [href]="expenseForm.get('receiptUrl')?.value" target="_blank"
-                    style="color: var(--secondary); font-size: 0.85rem; text-decoration: underline;">View existing
-                    receipt</a>
+            <input type="file" class="form-control" (change)="onFileSelected($event)"
+                accept="image/jpeg,image/png,image/webp,application/pdf" style="padding: 0.5rem 1rem;">
+
+            <div *ngIf="existingReceiptPath && !removeExistingReceipt" style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
+                <button type="button" class="btn btn-secondary" (click)="viewReceipt()"
+                    [disabled]="receiptLoading || isLoading" style="font-size: 0.85rem;">
+                    {{ receiptLoading ? 'Opening...' : 'View existing receipt' }}
+                </button>
+                <button type="button" class="btn btn-secondary" (click)="removeReceipt()"
+                    [disabled]="isLoading" style="font-size: 0.85rem; color: var(--accent);">
+                    Remove receipt
+                </button>
+            </div>
+            <div *ngIf="removeExistingReceipt" style="margin-top: 0.5rem; color: var(--text-muted); font-size: 0.85rem;">
+                The existing receipt will be removed when you save.
             </div>
         </div>
 
