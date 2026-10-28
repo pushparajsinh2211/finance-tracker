@@ -1,4 +1,5 @@
 using System.Text;
+using FamilyLedger.Api.Services.FinanceHub;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
@@ -8,6 +9,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpClient();
+builder.Services.AddScoped<IStatementParser, StatementParser>();
+builder.Services.AddSingleton<IFinancialDataProvider, UnconfiguredAccountAggregatorProvider>();
 
 builder.Services.AddCors(options =>
 {
@@ -42,15 +45,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             OnAuthenticationFailed = context =>
             {
                 Console.WriteLine($"JWT Auth Failed. Error: {context.Exception.Message}");
-                if (context.Exception.InnerException != null)
-                {
-                    Console.WriteLine($"Inner Error: {context.Exception.InnerException.Message}");
-                }
-                return Task.CompletedTask;
-            },
-            OnTokenValidated = context =>
-            {
-                Console.WriteLine("JWT Token Validated Successfully!");
                 return Task.CompletedTask;
             }
         };

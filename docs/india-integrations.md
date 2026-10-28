@@ -2,7 +2,7 @@
 
 ## Important status
 
-All external financial-data integrations described here are planned. This repository does not contain production bank, credit-card, Account Aggregator or UPI integrations, credentials or certifications.
+User-initiated bank/card statement import is implemented for generic CSV and text-based PDF files. Automatic external financial-data integrations remain planned: this repository contains no production bank, credit-card, Account Aggregator or UPI credentials, connector, or certification.
 
 ## Bank accounts
 
@@ -10,7 +10,7 @@ The preferred automatic path is the RBI Account Aggregator ecosystem, using a co
 
 Coverage varies by institution, account type and provider. During discovery, verify supported FIPs, refresh frequency, transaction history window, webhook/polling behavior, sandbox fidelity, data residency, pricing and grievance handling. Build one adapter interface so a provider can be replaced without changing the canonical ledger.
 
-Fallbacks are user-uploaded CSV/PDF statements and manual entry. PDF parsing must be institution/version specific and always show a review screen.
+Fallbacks are user-uploaded CSV/text-PDF statements and manual entry. The generic parser always shows a review screen; institution/version-specific parsers are still needed for formats that do not reconcile.
 
 ## Credit cards
 
@@ -30,7 +30,7 @@ Cash is first-party data and is available now through existing manual expense en
 
 ## Statement imports
 
-Provide templates and parsers per institution. Every import has a preview, detected account, date range, row count, validation errors and duplicate estimate before commit. Store the original file only when the user opts in and define a retention period. Password-protected PDFs should be decrypted locally or in short-lived isolated processing; passwords must not be logged or persisted.
+The current generic parser accepts common date, narration, debit, credit, amount, direction and reference headers. Add redacted fixtures and dedicated parsers per institution when its format cannot be reconciled. Every import has a preview, detected account, date range, row count, validation errors and duplicate estimate before commit. Store the original file only when the user opts in and define a retention period. Password-protected PDFs are processed in memory by the API; passwords are not logged or persisted. Scanned-image PDFs are rejected until an OCR pipeline is implemented.
 
 ## Provider selection checklist
 

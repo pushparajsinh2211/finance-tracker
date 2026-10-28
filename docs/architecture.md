@@ -4,7 +4,7 @@
 
 FinanceHub extends the existing FamilyLedger application into a personal-finance aggregation platform for Indian users. The current Angular 17 client, ASP.NET Core 8 API, Supabase authentication and PostgreSQL database remain in place. Existing family, expense, budget, EMI, savings and notification features are preserved.
 
-This starter adds the storage model and API/UI contracts needed for bank accounts, credit cards, UPI and cash. It does not include a production bank, card, Account Aggregator or UPI connector. Those integrations require provider onboarding, consent, compliance review and production credentials.
+FinanceHub now includes user-initiated CSV and text-based PDF statement preview/import for bank and card sources, with atomic canonical ingestion and deterministic deduplication. It does not include a production bank, card, Account Aggregator or UPI connector. Those integrations require provider onboarding, consent, compliance review and production credentials.
 
 ## System context
 
@@ -53,12 +53,12 @@ User rules run before learned suggestions. Rules can match merchant text, narrat
 
 ## API surface
 
-The starter exposes GET /api/financehub/sources and POST /api/financehub/sources/{source}/connect. GET is an authenticated capability catalogue. POST deliberately returns HTTP 501 for external sources and documents the missing provider configuration. Existing expense endpoints continue to support manual cash entry.
+The application exposes GET /api/financehub/sources, POST /api/financehub/sources/{source}/connect, POST /api/financehub/imports/preview, and POST /api/financehub/imports/commit. GET is an authenticated capability catalogue. POST deliberately returns HTTP 501 for external sources and documents the missing provider configuration. Existing expense endpoints continue to support manual cash entry.
 
 Planned API groups:
 
 - /api/financehub/connections for consent and connection state;
-- /api/financehub/imports for statement upload and import history;
+- /api/financehub/imports for additional institution parsers and import history;
 - /api/financehub/transactions for unified search, review and corrections;
 - /api/financehub/rules for deterministic categorization;
 - /api/financehub/webhooks/{provider} for verified provider events.

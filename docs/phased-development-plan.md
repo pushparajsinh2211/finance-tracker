@@ -10,7 +10,21 @@
 
 Exit: builds pass, migration is reviewed in a disposable Supabase project, and external sources are visibly labelled planned.
 
-## Phase 1 — unified manual ledger
+## Phase 1 — unified manual ledger (in progress)
+
+Implemented:
+- Generic bank/card CSV and text-PDF parsing with preview before commit.
+- Atomic, idempotent imports with deterministic fingerprints and duplicate counts.
+- UPI/payment-rail detection from imported bank narration.
+- Read-only client policies for import accounts, runs, raw payloads and canonical transactions.
+- A provider adapter boundary that remains deliberately unconfigured.
+
+Remaining:
+- Unified transaction search/review UI and user corrections.
+- Institution-specific redacted fixtures and parsers where generic formats do not reconcile.
+- Export/account deletion workflows and OCR for scanned statements.
+
+## Phase 1 original scope
 
 - Extend cash entry to the canonical transaction model.
 - Add unified transaction search, filters, review queue and audit history.
