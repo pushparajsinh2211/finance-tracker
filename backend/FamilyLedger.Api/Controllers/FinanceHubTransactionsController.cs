@@ -111,8 +111,12 @@ public sealed class FinanceHubTransactionsController : ControllerBase
 
             if (!response.IsSuccessStatusCode)
             {
+                var status = (int)response.StatusCode >= StatusCodes.Status500InternalServerError
+                    ? StatusCodes.Status502BadGateway
+                    : failureStatus;
+
                 return StatusCode(
-                    failureStatus,
+                    status,
                     new { Message = "The FinanceHub request could not be completed." });
             }
 
