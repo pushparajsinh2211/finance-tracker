@@ -13,6 +13,8 @@ FamilyLedger is a comprehensive, full-stack personal and family finance manageme
 ### FinanceHub statement imports
 * **Bank and card statements:** Authenticated CSV and text-based PDF uploads with a preview-before-commit workflow.
 * **Safe ingestion:** Atomic imports, deterministic fingerprints, idempotent retries, immutable raw rows, and user-scoped RLS.
+* **Unified imported ledger:** Filter bank/card transactions, review flagged entries, assign family categories, and inspect import history.
+* **Audited corrections:** Category and review-state changes use ownership-checked database RPCs and immutable audit events.
 * **UPI detection:** UPI/IMPS/NEFT/RTGS/card/ATM rails are inferred from statement narration; UPI is not a separate live connection.
 * **Current limits:** Scanned PDFs need OCR, institution-specific formats may need a dedicated parser, and production bank/card/UPI sync still requires regulated-provider onboarding.
 

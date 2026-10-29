@@ -1,0 +1,87 @@
+<section class="transactions-page container">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">FinanceHub ledger</p>
+      <h1>Imported transactions</h1>
+      <p class="intro">Review bank and card statement entries without changing your manual family expenses.</p>
+    </div>
+    <a class="btn btn-primary" routerLink="/connections">Import statement</a>
+  </header>
+
+  <div class="summary-grid">
+    <article class="summary-card"><span>Matching transactions</span><strong>{{ totalCount }}</strong></article>
+    <article class="summary-card"><span>Needs review</span><strong>{{ reviewCount }}</strong></article>
+    <article class="summary-card"><span>Connected statements</span><strong>{{ accounts.length }}</strong></article>
+  </div>
+
+  <form class="filters card" (ngSubmit)="loadTransactions(true)">
+    <label>Search<input class="form-control" [(ngModel)]="filters.search" name="search" maxlength="120" placeholder="Narration, merchant or reference"></label>
+    <label>Account<select class="form-control" [(ngModel)]="filters.accountId" name="accountId">
+      <option value="">All accounts</option>
+      <option *ngFor="let account of accounts" [value]="account.id">{{ account.name }} {{ account.maskedIdentifier || '' }}</option>
+    </select></label>
+    <label>Category<select class="form-control" [(ngModel)]="filters.categoryId" name="categoryId">
+      <option value="">All categories</option>
+      <option *ngFor="let category of categories" [value]="category.id">{{ category.name }}</option>
+    </select></label>
+    <label>Payment rail<select class="form-control" [(ngModel)]="filters.paymentRail" name="paymentRail">
+      <option value="">All rails</option>
+      <option *ngFor="let rail of paymentRails" [value]="rail">{{ rail }}</option>
+    </select></label>
+    <label>Direction<select class="form-control" [(ngModel)]="filters.direction" name="direction">
+      <option value="">Debit and credit</option><option value="debit">Debit</option><option value="credit">Credit</option>
+    </select></label>
+    <label>Review state<select class="form-control" [(ngModel)]="filters.reviewState" name="reviewState">
+      <option value="">All states</option><option value="true">Needs review</option><option value="false">Reviewed</option>
+    </select></label>
+    <label>From<input class="form-control" type="date" [(ngModel)]="filters.fromDate" name="fromDate"></label>
+    <label>To<input class="form-control" type="date" [(ngModel)]="filters.toDate" name="toDate"></label>
+    <div class="filter-actions"><button class="btn btn-primary" type="submit">Apply filters</button><button class="btn btn-secondary" type="button" (click)="resetFilters()">Reset</button></div>
+  </form>
+
+  <p *ngIf="error" class="alert-error" role="alert">{{ error }}</p>
+  <p *ngIf="success" class="alert-success" role="status">{{ success }}</p>
+
+  <section class="card table-card" aria-labelledby="transaction-list-title">
+    <div class="section-heading"><div><h2 id="transaction-list-title">Statement ledger</h2><p>Category changes are audited.</p></div><span>Page {{ page }} of {{ totalPages || 1 }}</span></div>
+    <p *ngIf="loading" class="empty-state">Loading imported transactions…</p>
+    <div *ngIf="!loading && transactions.length" class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Account</th><th>Transaction</th><th>Amount</th><th>Review and category</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let transaction of transactions" [class.needs-review]="transaction.needsReview">
+            <td class="nowrap">{{ transaction.occurredAt | date:'mediumDate':'+0530' }}</td>
+            <td><strong>{{ transaction.accountName }}</strong><small>{{ sourceLabel(transaction.sourceType) }} · {{ transaction.maskedIdentifier || 'masked' }}</small></td>
+            <td><strong>{{ transaction.merchantName || transaction.narration }}</strong><small>{{ transaction.paymentRail || transaction.transactionType }}<span *ngIf="transaction.externalReference"> · {{ transaction.externalReference }}</span></small></td>
+            <td class="amount" [class.credit]="transaction.direction === 'credit'">{{ transaction.direction === 'debit' ? '−' : '+' }}{{ transaction.amount | currency:transaction.currency:'symbol':'1.2-2' }}</td>
+            <td>
+              <div class="review-controls">
+                <select class="form-control" [(ngModel)]="transaction.draftCategoryId" [name]="'category-' + transaction.id">
+                  <option value="">Uncategorised</option>
+                  <option *ngFor="let category of categories" [value]="category.id">{{ category.name }}</option>
+                </select>
+                <label class="check"><input type="checkbox" [(ngModel)]="transaction.draftNeedsReview" [name]="'review-' + transaction.id"> Needs review</label>
+                <button class="btn btn-secondary" type="button" [disabled]="transaction.saving" (click)="saveReview(transaction)">{{ transaction.saving ? 'Saving…' : 'Save' }}</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div *ngIf="!loading && !transactions.length" class="empty-state"><p>No imported transactions match these filters.</p><a routerLink="/connections">Import a bank or card statement</a></div>
+    <div class="pagination" *ngIf="totalPages > 1"><button class="btn btn-secondary" [disabled]="page <= 1" (click)="previousPage()">Previous</button><span>{{ totalCount }} total</span><button class="btn btn-secondary" [disabled]="page >= totalPages" (click)="nextPage()">Next</button></div>
+  </section>
+
+  <section class="card" aria-labelledby="import-history-title">
+    <div class="section-heading"><div><h2 id="import-history-title">Import history</h2><p>Recent statement processing and reconciliation counts.</p></div></div>
+    <p *ngIf="importsLoading" class="empty-state">Loading import history…</p>
+    <div class="history-grid" *ngIf="!importsLoading && imports.length">
+      <article *ngFor="let item of imports">
+        <div><strong>{{ item.accountName || sourceLabel(item.sourceType) }}</strong><small>{{ item.createdAt | date:'medium' }} · {{ item.sourceKind | uppercase }}</small></div>
+        <span class="status">{{ item.status }}</span>
+        <dl><div><dt>Received</dt><dd>{{ item.receivedCount }}</dd></div><div><dt>Added</dt><dd>{{ item.importedCount }}</dd></div><div><dt>Duplicates</dt><dd>{{ item.duplicateCount }}</dd></div><div><dt>Review</dt><dd>{{ item.reviewCount }}</dd></div></dl>
+      </article>
+    </div>
+    <p *ngIf="!importsLoading && !imports.length" class="empty-state">No statement imports yet.</p>
+  </section>
+</section>
