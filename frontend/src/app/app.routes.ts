@@ -22,6 +22,7 @@ export const routes: Routes = [
         children: [
             { path: 'dashboard', loadComponent: () => import('./dashboard/dashboard.component').then(m => m.DashboardComponent) },
             { path: 'connections', loadComponent: () => import('./connections/connections.component').then(m => m.ConnectionsComponent) },
+            { path: 'transactions', loadComponent: () => import('./transactions/financehub-transactions.component').then(m => m.FinanceHubTransactionsComponent) },
             { path: 'budgets', loadComponent: () => import('./budgets/budgets-view/budgets-view.component').then(m => m.BudgetsViewComponent) },
             { path: 'finance', loadComponent: () => import('./finance/finance-view/finance-view.component').then(m => m.FinanceViewComponent) },
             { path: 'family', loadComponent: () => import('./family/family-view/family-view.component').then(m => m.FamilyViewComponent) },

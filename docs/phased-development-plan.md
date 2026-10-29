@@ -18,9 +18,10 @@ Implemented:
 - UPI/payment-rail detection from imported bank narration.
 - Read-only client policies for import accounts, runs, raw payloads and canonical transactions.
 - A provider adapter boundary that remains deliberately unconfigured.
+- Unified imported transaction search, filters, paginated review/category correction and import history.
+- Immutable audit events for imported-transaction corrections.
 
 Remaining:
-- Unified transaction search/review UI and user corrections.
 - Institution-specific redacted fixtures and parsers where generic formats do not reconcile.
 - Export/account deletion workflows and OCR for scanned statements.
 

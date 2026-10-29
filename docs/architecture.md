@@ -58,8 +58,8 @@ The application exposes GET /api/financehub/sources, POST /api/financehub/source
 Planned API groups:
 
 - /api/financehub/connections for consent and connection state;
-- /api/financehub/imports for additional institution parsers and import history;
-- /api/financehub/transactions for unified search, review and corrections;
+- /api/financehub/imports for preview/commit, import history and future institution parsers;
+- /api/financehub/transactions for paginated search, review and audited category corrections;
 - /api/financehub/rules for deterministic categorization;
 - /api/financehub/webhooks/{provider} for verified provider events.
 
