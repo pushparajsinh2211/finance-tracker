@@ -152,7 +152,7 @@ SELECT is(
 
 
 SELECT lives_ok(
-    $SELECT public.import_financehub_statement(
+    $repeat$SELECT public.import_financehub_statement(
         'bank',
         'csv',
         'Primary Bank',
@@ -180,7 +180,7 @@ SELECT lives_ok(
             "occurrenceIndex": 2
           }
         ]'::jsonb
-    )$,
+    )$repeat$,
     'legitimate repeated rows import atomically'
 );
 
