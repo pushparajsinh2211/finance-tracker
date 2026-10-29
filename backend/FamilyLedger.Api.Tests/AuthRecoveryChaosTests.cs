@@ -111,7 +111,7 @@ public sealed class AuthRecoveryChaosTests
         var controller = new AuthController(
             new Supabase.Client(
                 "https://supabase.invalid",
-                "public-test-key",
+                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlc3QtcHJvamVjdCIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzAwMDAwMDAwLCJleHAiOjIwMDAwMDAwMDB9.test-signature",
                 new Supabase.SupabaseOptions
                 {
                     AutoConnectRealtime = false,
