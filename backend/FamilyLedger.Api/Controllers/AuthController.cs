@@ -154,25 +154,67 @@ namespace FamilyLedger.Api.Controllers
                 return BadRequest(new { Message = "The password recovery redirect URL is invalid." });
             }
 
+            var supabaseUrl = _configuration["Supabase:Url"];
+            var supabaseKey = _configuration["Supabase:AnonKey"];
+            if (string.IsNullOrWhiteSpace(supabaseUrl) || string.IsNullOrWhiteSpace(supabaseKey))
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+                {
+                    Code = "email_service_unavailable",
+                    Message = "Password reset email delivery is not configured."
+                });
+            }
+
             try
             {
-                if (redirectTo == null)
+                var endpoint = $"{supabaseUrl.TrimEnd('/')}/auth/v1/recover";
+                if (!string.IsNullOrWhiteSpace(redirectTo))
                 {
-                    await _supabaseClient.Auth.ResetPasswordForEmail(request.Email);
+                    endpoint += $"?redirect_to={Uri.EscapeDataString(redirectTo)}";
                 }
-                else
+
+                using var requestMessage = new HttpRequestMessage(HttpMethod.Post, endpoint);
+                requestMessage.Headers.Add("apikey", supabaseKey);
+                requestMessage.Content = JsonContent.Create(new { email = request.Email });
+
+                var client = _httpClientFactory.CreateClient();
+                using var response = await client.SendAsync(requestMessage);
+                var responseBody = await response.Content.ReadAsStringAsync();
+                var isRateLimited =
+                    response.StatusCode == System.Net.HttpStatusCode.TooManyRequests ||
+                    responseBody.Contains("over_email_send_rate_limit", StringComparison.OrdinalIgnoreCase) ||
+                    responseBody.Contains("email rate limit exceeded", StringComparison.OrdinalIgnoreCase);
+
+                if (isRateLimited)
                 {
-                    await _supabaseClient.Auth.ResetPasswordForEmail(new ResetPasswordForEmailOptions(request.Email)
+                    const int retryAfterSeconds = 60;
+                    Response.Headers.RetryAfter = retryAfterSeconds.ToString();
+                    return StatusCode(StatusCodes.Status429TooManyRequests, new
                     {
-                        RedirectTo = redirectTo
+                        Code = "email_rate_limited",
+                        Message = "The email service limit has been reached. Please wait before requesting another reset link.",
+                        RetryAfterSeconds = retryAfterSeconds
+                    });
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return StatusCode(StatusCodes.Status502BadGateway, new
+                    {
+                        Code = "email_service_unavailable",
+                        Message = "Password reset email delivery is temporarily unavailable."
                     });
                 }
 
                 return Ok(new { Message = "If an account exists, a reset link has been sent." });
             }
-            catch (Exception ex)
+            catch
             {
-                return BadRequest(new { Message = ex.Message });
+                return StatusCode(StatusCodes.Status502BadGateway, new
+                {
+                    Code = "email_service_unavailable",
+                    Message = "Password reset email delivery is temporarily unavailable."
+                });
             }
         }
 
