@@ -1,19 +1,17 @@
 <section class="connections-page container">
   <header class="page-header">
-    <div>
-      <p class="eyebrow">FinanceHub</p>
-      <h1>Data sources</h1>
-      <p class="intro">
-        Bring bank, card, UPI and cash activity into one reviewable ledger.
-        External automatic connections are architecture-ready but are not live yet.
-      </p>
-    </div>
+    <p class="eyebrow">FinanceHub</p>
+    <h1>Data sources</h1>
+    <p class="intro">
+      Import bank and card statements into one reviewable ledger. Automatic provider sync is
+      architecture-ready but is not live.
+    </p>
   </header>
 
   <div class="notice" role="status">
     <strong>No banking credentials are collected.</strong>
-    Bank, card and UPI sync will remain disabled until a regulated provider is selected,
-    contracted and security-reviewed.
+    Upload CSV or text-based PDF statements. UPI entries are detected from bank narration.
+    Passwords for protected PDFs are used only while parsing and are never stored.
   </div>
 
   <p *ngIf="loading" class="state">Loading data sources…</p>
@@ -23,26 +21,119 @@
     <article class="source-card" *ngFor="let source of sources">
       <div class="source-heading">
         <div>
-          <p class="source-kind">{{ source.automatic ? 'Automatic' : 'Manual' }}</p>
+          <p class="source-kind">{{ source.automatic ? 'Automatic' : 'User supplied' }}</p>
           <h2>{{ source.name }}</h2>
         </div>
-        <span class="status" [class.available]="source.availability === 'available'">
+        <span class="status" [class.available]="source.availability !== 'planned'">
           {{ availabilityLabel(source) }}
         </span>
       </div>
 
       <p>{{ source.description }}</p>
+      <ul><li *ngFor="let capability of source.capabilities">{{ capability }}</li></ul>
 
-      <ul>
-        <li *ngFor="let capability of source.capabilities">{{ capability }}</li>
-      </ul>
-
-      <a *ngIf="source.id === 'cash'" class="btn btn-primary" routerLink="/dashboard">
-        Add cash expense
-      </a>
-      <button *ngIf="source.id !== 'cash'" class="btn btn-secondary" type="button" disabled>
-        Connect when available
+      <a *ngIf="source.id === 'cash'" class="btn btn-primary" routerLink="/dashboard">Add cash expense</a>
+      <button
+        *ngIf="source.id === 'bank' || source.id === 'card'"
+        class="btn btn-primary"
+        type="button"
+        (click)="chooseImport(source)">
+        Import statement
+      </button>
+      <button
+        *ngIf="source.id === 'upi'"
+        class="btn btn-secondary"
+        type="button"
+        (click)="chooseUpiImport()">
+        Import linked bank statement
       </button>
     </article>
   </div>
+
+  <section #importPanel class="import-panel" aria-labelledby="import-title">
+    <div>
+      <p class="eyebrow">Preview before commit</p>
+      <h2 id="import-title">Import a statement</h2>
+      <p class="help">Generic CSV and text-based PDF files up to 10 MB are accepted. Scanned-image PDFs need OCR and are not supported yet.</p>
+    </div>
+
+    <div class="form-grid">
+      <label>
+        Source
+        <select [(ngModel)]="sourceType" (ngModelChange)="preview = null">
+          <option value="bank">Bank account</option>
+          <option value="card">Credit card</option>
+        </select>
+      </label>
+
+      <label>
+        Account name
+        <input [(ngModel)]="accountName" (ngModelChange)="preview = null" maxlength="80" placeholder="Primary bank account">
+      </label>
+
+      <label>
+        Masked identifier (optional)
+        <input [(ngModel)]="maskedIdentifier" (ngModelChange)="preview = null" maxlength="32" placeholder="xxxx1234">
+        <small>Use only a masked value or last four digits.</small>
+      </label>
+
+      <label>
+        PDF password (optional)
+        <input [(ngModel)]="password" (ngModelChange)="preview = null" type="password" autocomplete="off">
+        <small>Sent over HTTPS for in-memory parsing; never persisted.</small>
+      </label>
+
+      <label class="file-field">
+        Statement file
+        <input type="file" accept=".csv,text/csv,application/pdf" (change)="fileSelected($event)">
+      </label>
+    </div>
+
+    <button class="btn btn-primary" type="button" [disabled]="previewing || committing" (click)="previewStatement()">
+      {{ previewing ? 'Reading statement…' : 'Preview statement' }}
+    </button>
+
+    <p *ngIf="importError" class="state error" role="alert">{{ importError }}</p>
+
+    <div *ngIf="preview" class="preview">
+      <div class="summary">
+        <strong>{{ preview.transactionCount }} transactions found</strong>
+        <span>{{ preview.reviewCount }} need review</span>
+        <span>Parser: {{ preview.parser }} {{ preview.parserVersion }}</span>
+      </div>
+
+      <ul *ngIf="preview.errors.length" class="warnings">
+        <li *ngFor="let item of preview.errors">{{ item }}</li>
+      </ul>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Narration</th><th>Rail</th><th>Direction</th><th>Amount</th><th>Review</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let transaction of preview.transactions">
+              <td>{{ transaction.occurredAt | date:'mediumDate' }}</td>
+              <td>{{ transaction.narration }}</td>
+              <td>{{ transaction.paymentRail || '—' }}</td>
+              <td>{{ transaction.direction }}</td>
+              <td>{{ transaction.amount | currency:'INR':'symbol':'1.2-2' }}</td>
+              <td>{{ transaction.needsReview ? 'Yes' : 'No' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p *ngIf="preview.transactionCount > preview.transactions.length" class="help">
+        Showing the first {{ preview.transactions.length }} rows.
+      </p>
+
+      <button class="btn btn-primary" type="button" [disabled]="committing" (click)="commitStatement()">
+        {{ committing ? 'Importing…' : 'Confirm import' }}
+      </button>
+    </div>
+
+    <div *ngIf="importResult" class="success" role="status">
+      <strong>{{ importResult.alreadyImported ? 'This file was already imported.' : 'Import complete.' }}</strong>
+      {{ importResult.importedCount }} added, {{ importResult.duplicateCount }} duplicates skipped,
+      {{ importResult.reviewCount }} flagged for review.
+    </div>
+  </section>
 </section>

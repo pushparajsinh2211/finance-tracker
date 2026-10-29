@@ -10,6 +10,14 @@ FamilyLedger is a comprehensive, full-stack personal and family finance manageme
 * **Row-Level Security (RLS):** Total data isolation at the Postgres level. Users explicitly only see data mapped to their family ledger.
 * **Transaction Dashboard:** Glassmorphism UI tracking expenses automatically separated by Month and Category tags. Recurring expenses are natively supported.
 
+### FinanceHub statement imports
+* **Bank and card statements:** Authenticated CSV and text-based PDF uploads with a preview-before-commit workflow.
+* **Safe ingestion:** Atomic imports, deterministic fingerprints, idempotent retries, immutable raw rows, and user-scoped RLS.
+* **UPI detection:** UPI/IMPS/NEFT/RTGS/card/ATM rails are inferred from statement narration; UPI is not a separate live connection.
+* **Current limits:** Scanned PDFs need OCR, institution-specific formats may need a dedicated parser, and production bank/card/UPI sync still requires regulated-provider onboarding.
+
+Use only masked account/card identifiers. PDF passwords are processed in memory and are never persisted.
+
 ### Phase 2: Budgets & Automation
 * **Categorical Budgets:** Map maximum spending limits across any specific active category per month.
 * **Live Progress UI:** Color-shifting UI sliders warning you automatically if a budget crosses 75% or 90% consumption.
