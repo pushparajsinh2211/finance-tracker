@@ -113,7 +113,9 @@ Before the first deployment, add these encrypted repository or `production` envi
 - `SUPABASE_ACCESS_TOKEN`: a Supabase personal access token scoped to the production project
 - `SUPABASE_DB_PASSWORD`: the database password for project `ojyqclewkgbrhuaehsvb`
 
-Then open **Actions → Deploy Supabase production → Run workflow**, enter `DEPLOY`, and run it. The workflow first performs a migration dry run and only then applies pending migrations with `supabase db push`. It never resets or recreates the hosted database.
+After a pull request is merged, the production workflow waits for the `CI` workflow on `master` to succeed. It then checks out that exact tested commit, performs a migration dry run, and applies pending migrations with `supabase db push`. Failed or cancelled CI runs never deploy.
+
+For recovery or an intentional retry, open **Actions → Deploy Supabase production → Run workflow**, enter `DEPLOY`, and run it manually. Both paths use the `production` environment, serialize deployments, and never reset or recreate the hosted database.
 
 ---
 
