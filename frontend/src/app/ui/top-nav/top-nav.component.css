@@ -15,21 +15,7 @@
     padding: 0.1rem 0.35rem;
 }
 
-.top-nav .container {
-    overflow-x: auto;
-}
-
 .top-nav .container > div {
-    flex-shrink: 0;
-    white-space: nowrap;
-}
-
-@media (max-width: 760px) {
-    .top-nav {
-        overflow-x: auto;
-    }
-
-    .top-nav .container {
-        min-width: max-content;
-    }
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }

@@ -50,7 +50,7 @@
         <thead><tr><th>Date</th><th>Account</th><th>Transaction</th><th>Amount</th><th>Review and category</th></tr></thead>
         <tbody>
           <tr *ngFor="let transaction of transactions" [class.needs-review]="transaction.needsReview">
-            <td class="nowrap">{{ transaction.occurredAt | date:'mediumDate' }}</td>
+            <td class="nowrap">{{ transaction.occurredAt | date:'mediumDate':'+0530' }}</td>
             <td><strong>{{ transaction.accountName }}</strong><small>{{ sourceLabel(transaction.sourceType) }} · {{ transaction.maskedIdentifier || 'masked' }}</small></td>
             <td><strong>{{ transaction.merchantName || transaction.narration }}</strong><small>{{ transaction.paymentRail || transaction.transactionType }}<span *ngIf="transaction.externalReference"> · {{ transaction.externalReference }}</span></small></td>
             <td class="amount" [class.credit]="transaction.direction === 'credit'">{{ transaction.direction === 'debit' ? '−' : '+' }}{{ transaction.amount | currency:transaction.currency:'symbol':'1.2-2' }}</td>
