@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { throwError } from 'rxjs';
 import { AuthService } from '../auth.service';
 import { ForgotPasswordComponent } from './forgot-password.component';
@@ -14,7 +15,10 @@ describe('ForgotPasswordComponent', () => {
 
     await TestBed.configureTestingModule({
       imports: [ForgotPasswordComponent],
-      providers: [{ provide: AuthService, useValue: authService }]
+      providers: [
+        provideRouter([]),
+        { provide: AuthService, useValue: authService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ForgotPasswordComponent);
@@ -23,7 +27,7 @@ describe('ForgotPasswordComponent', () => {
   });
 
   afterEach(() => {
-    fixture.destroy();
+    fixture?.destroy();
     localStorage.removeItem('password-reset-cooldown-until');
   });
 
