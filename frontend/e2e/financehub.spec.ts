@@ -26,7 +26,10 @@ async function json(route: Route, status: number, body: unknown): Promise<void> 
   await route.fulfill({
     status,
     contentType: 'application/json',
-    headers: { 'access-control-allow-origin': '*' },
+    headers: {
+      'access-control-allow-origin': '*',
+      'access-control-allow-headers': 'authorization, content-type'
+    },
     body: JSON.stringify(body)
   });
 }
@@ -37,6 +40,19 @@ async function mockApi(page: Page, state: ApiState): Promise<void> {
     const method = request.method();
     const path = new URL(request.url()).pathname;
     const body = request.postData() ? request.postDataJSON() : null;
+
+    if (method === 'OPTIONS') {
+      await route.fulfill({
+        status: 204,
+        headers: {
+          'access-control-allow-origin': '*',
+          'access-control-allow-methods': 'GET, POST, PATCH, DELETE, OPTIONS',
+          'access-control-allow-headers': 'authorization, content-type'
+        }
+      });
+      return;
+    }
+
     state.requests.push({ method, path, body });
 
     if (method === 'POST' && path === '/api/auth/login') {
