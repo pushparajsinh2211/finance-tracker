@@ -14,6 +14,14 @@ export const routes: Routes = [
     { path: 'forgot-password', component: ForgotPasswordComponent },
     { path: 'update-password', component: UpdatePasswordComponent },
     { path: 'onboarding', canActivate: [authGuard], component: OnboardingComponent },
+    {
+        path: 'privacy',
+        component: MainLayoutComponent,
+        canActivate: [authGuard],
+        children: [
+            { path: '', loadComponent: () => import('./privacy/privacy.component').then(m => m.PrivacyComponent) }
+        ]
+    },
 
     {
         path: '',
@@ -26,7 +34,6 @@ export const routes: Routes = [
             { path: 'budgets', loadComponent: () => import('./budgets/budgets-view/budgets-view.component').then(m => m.BudgetsViewComponent) },
             { path: 'finance', loadComponent: () => import('./finance/finance-view/finance-view.component').then(m => m.FinanceViewComponent) },
             { path: 'family', loadComponent: () => import('./family/family-view/family-view.component').then(m => m.FamilyViewComponent) },
-            { path: 'privacy', loadComponent: () => import('./privacy/privacy.component').then(m => m.PrivacyComponent) },
             { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
         ]
     },
