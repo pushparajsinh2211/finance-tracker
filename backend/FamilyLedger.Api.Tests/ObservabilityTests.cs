@@ -66,6 +66,9 @@ public sealed class ObservabilityTests
         var response = await new StreamReader(context.Response.Body, Encoding.UTF8).ReadToEndAsync();
 
         Assert.Equal(StatusCodes.Status500InternalServerError, context.Response.StatusCode);
+        Assert.Equal(
+            "request-456",
+            context.Response.Headers[CorrelationIdMiddleware.HeaderName].ToString());
         Assert.Contains("unexpected_error", response);
         Assert.Contains("request-456", response);
         Assert.DoesNotContain("private-secret", response);
