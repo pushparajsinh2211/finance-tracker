@@ -72,15 +72,15 @@ public sealed class PrivacyController : ControllerBase
             return Unauthorized(new { message = "User ID not found in token." });
         }
 
-        var statusResponse = await GetUserClient().Rpc(
-            "get_account_deletion_status",
+        var preparationResponse = await GetUserClient().Rpc(
+            "begin_account_deletion",
             new Dictionary<string, object>());
-        using var status = JsonDocument.Parse(statusResponse.Content ?? "{}");
+        using var preparation = JsonDocument.Parse(preparationResponse.Content ?? "{}");
 
-        if (!status.RootElement.TryGetProperty("canDelete", out var canDelete) ||
+        if (!preparation.RootElement.TryGetProperty("canDelete", out var canDelete) ||
             canDelete.ValueKind != JsonValueKind.True)
         {
-            var blocker = status.RootElement.TryGetProperty("blocker", out var blockerElement)
+            var blocker = preparation.RootElement.TryGetProperty("blocker", out var blockerElement)
                 ? blockerElement.GetString()
                 : "Account deletion is currently blocked.";
             return Conflict(new { message = blocker });
@@ -88,50 +88,56 @@ public sealed class PrivacyController : ControllerBase
 
         var supabaseUrl = RequiredConfiguration("Supabase:Url").TrimEnd('/');
         var serviceRoleKey = RequiredConfiguration("Supabase:ServiceRoleKey");
-        var receiptPaths = await ListReceiptPaths(supabaseUrl, serviceRoleKey, userId);
 
-        using var client = CreateServiceRoleClient(serviceRoleKey);
-        using var deleteUser = await client.DeleteAsync(
-            $"{supabaseUrl}/auth/v1/admin/users/{userId}?should_soft_delete=false");
-
-        if (!deleteUser.IsSuccessStatusCode)
+        try
         {
-            _logger.LogError(
-                "Supabase account deletion failed with status {StatusCode} for correlation ID {CorrelationId}",
-                (int)deleteUser.StatusCode,
-                HttpContext.TraceIdentifier);
-            return Problem(
-                statusCode: StatusCodes.Status502BadGateway,
-                title: "Account deletion failed",
-                detail: "The identity provider did not complete the deletion. No account-deletion success was reported.");
-        }
-
-        if (receiptPaths.Count > 0)
-        {
-            using var removeRequest = new HttpRequestMessage(
-                HttpMethod.Delete,
-                $"{supabaseUrl}/storage/v1/object/receipts")
+            var receiptPaths = await ListReceiptPaths(supabaseUrl, serviceRoleKey, userId);
+            if (receiptPaths.Count > 0)
             {
-                Content = JsonContent.Create(new { prefixes = receiptPaths })
-            };
-            AddServiceHeaders(removeRequest, serviceRoleKey);
-            using var removeResponse = await client.SendAsync(removeRequest);
+                var receiptsRemoved = await RemoveReceiptPaths(
+                    supabaseUrl,
+                    serviceRoleKey,
+                    receiptPaths);
 
-            if (!removeResponse.IsSuccessStatusCode)
+                if (!receiptsRemoved)
+                {
+                    await TryCancelDeletionPreparation();
+                    return Problem(
+                        statusCode: StatusCodes.Status502BadGateway,
+                        title: "Receipt cleanup failed",
+                        detail: "Your account was not deleted because its private receipt files could not be removed safely.");
+                }
+            }
+
+            using var client = CreateServiceRoleClient(serviceRoleKey);
+            using var deleteUser = await client.DeleteAsync(
+                $"{supabaseUrl}/auth/v1/admin/users/{userId}?should_soft_delete=false");
+
+            if (!deleteUser.IsSuccessStatusCode)
             {
                 _logger.LogError(
-                    "Receipt cleanup failed after account deletion with status {StatusCode} for correlation ID {CorrelationId}",
-                    (int)removeResponse.StatusCode,
+                    "Supabase account deletion failed with status {StatusCode} for correlation ID {CorrelationId}",
+                    (int)deleteUser.StatusCode,
                     HttpContext.TraceIdentifier);
+                await TryCancelDeletionPreparation();
+                return Problem(
+                    statusCode: StatusCodes.Status502BadGateway,
+                    title: "Account deletion failed",
+                    detail: "The identity provider did not complete the deletion. Your account remains active.");
             }
+
+            _logger.LogInformation(
+                "Account deletion completed for correlation ID {CorrelationId}; receipt objects removed: {ReceiptCount}",
+                HttpContext.TraceIdentifier,
+                receiptPaths.Count);
+
+            return Ok(new { message = "Your account and personal data have been deleted." });
         }
-
-        _logger.LogInformation(
-            "Account deletion completed for correlation ID {CorrelationId}; receipt objects scheduled: {ReceiptCount}",
-            HttpContext.TraceIdentifier,
-            receiptPaths.Count);
-
-        return Ok(new { message = "Your account and personal data have been deleted." });
+        catch
+        {
+            await TryCancelDeletionPreparation();
+            throw;
+        }
     }
 
     private Postgrest.Client GetUserClient() =>
@@ -164,38 +170,96 @@ public sealed class PrivacyController : ControllerBase
         string serviceRoleKey,
         Guid userId)
     {
+        const int pageSize = 1000;
+        var offset = 0;
+        var paths = new List<string>();
+
+        while (true)
+        {
+            using var client = CreateServiceRoleClient(serviceRoleKey);
+            using var request = new HttpRequestMessage(
+                HttpMethod.Post,
+                $"{supabaseUrl}/storage/v1/object/list/receipts")
+            {
+                Content = JsonContent.Create(new
+                {
+                    prefix = userId.ToString(),
+                    limit = pageSize,
+                    offset,
+                    sortBy = new { column = "name", order = "asc" }
+                })
+            };
+            AddServiceHeaders(request, serviceRoleKey);
+
+            using var response = await client.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError(
+                    "Receipt listing failed with status {StatusCode} for correlation ID {CorrelationId}",
+                    (int)response.StatusCode,
+                    HttpContext.TraceIdentifier);
+                throw new HttpRequestException("Receipt cleanup preparation failed.");
+            }
+
+            using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var page = payload.RootElement.EnumerateArray().ToList();
+
+            paths.AddRange(page
+                .Where(item => item.TryGetProperty("name", out _))
+                .Select(item => $"{userId}/{item.GetProperty("name").GetString()}")
+                .Where(itemPath => !itemPath.EndsWith("/", StringComparison.Ordinal)));
+
+            if (page.Count < pageSize)
+            {
+                return paths;
+            }
+
+            offset += pageSize;
+        }
+    }
+
+    private async Task<bool> RemoveReceiptPaths(
+        string supabaseUrl,
+        string serviceRoleKey,
+        IReadOnlyCollection<string> receiptPaths)
+    {
         using var client = CreateServiceRoleClient(serviceRoleKey);
         using var request = new HttpRequestMessage(
-            HttpMethod.Post,
-            $"{supabaseUrl}/storage/v1/object/list/receipts")
+            HttpMethod.Delete,
+            $"{supabaseUrl}/storage/v1/object/receipts")
         {
-            Content = JsonContent.Create(new
-            {
-                prefix = userId.ToString(),
-                limit = 1000,
-                offset = 0,
-                sortBy = new { column = "name", order = "asc" }
-            })
+            Content = JsonContent.Create(new { prefixes = receiptPaths })
         };
         AddServiceHeaders(request, serviceRoleKey);
 
         using var response = await client.SendAsync(request);
-        if (!response.IsSuccessStatusCode)
+        if (response.IsSuccessStatusCode)
         {
-            _logger.LogError(
-                "Receipt listing failed with status {StatusCode} for correlation ID {CorrelationId}",
-                (int)response.StatusCode,
-                HttpContext.TraceIdentifier);
-            throw new HttpRequestException("Receipt cleanup preparation failed.");
+            return true;
         }
 
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        return payload.RootElement
-            .EnumerateArray()
-            .Where(item => item.TryGetProperty("name", out _))
-            .Select(item => $"{userId}/{item.GetProperty("name").GetString()}")
-            .Where(path => !path.EndsWith("/", StringComparison.Ordinal))
-            .ToList();
+        _logger.LogError(
+            "Receipt cleanup failed with status {StatusCode} for correlation ID {CorrelationId}",
+            (int)response.StatusCode,
+            HttpContext.TraceIdentifier);
+        return false;
+    }
+
+    private async Task TryCancelDeletionPreparation()
+    {
+        try
+        {
+            await GetUserClient().Rpc(
+                "cancel_account_deletion",
+                new Dictionary<string, object>());
+        }
+        catch (Exception exception)
+        {
+            _logger.LogWarning(
+                exception,
+                "Could not cancel account deletion preparation for correlation ID {CorrelationId}",
+                HttpContext.TraceIdentifier);
+        }
     }
 
     private static void AddServiceHeaders(HttpRequestMessage request, string serviceRoleKey)
