@@ -3,7 +3,7 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 SET search_path = public, extensions;
 
-SELECT plan(10);
+SELECT plan(13);
 
 INSERT INTO auth.users (id, email)
 VALUES
@@ -69,6 +69,24 @@ SELECT is(public.get_account_deletion_status() ->> 'canDelete', 'true',
   'a non-head member may delete their account');
 SELECT is(public.export_my_data() #>> '{expenses,0,note}', 'member-private',
   'member export remains scoped to that member');
+
+RESET ROLE;
+DELETE FROM public.family_members
+WHERE user_id = '11000000-0000-0000-0000-000000000002';
+
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub', '11000000-0000-0000-0000-000000000001', true);
+
+SELECT is(public.get_account_deletion_status() ->> 'canDelete', 'false',
+  'former member family-linked data still blocks head deletion');
+SELECT is(public.begin_account_deletion() ->> 'canDelete', 'false',
+  'atomic deletion preparation rejects surviving data owned by another user');
+SELECT is(
+  (SELECT invite_active FROM public.families
+   WHERE id = '21000000-0000-0000-0000-000000000001'),
+  true,
+  'a rejected deletion preparation leaves invitations unchanged'
+);
 
 SELECT * FROM finish();
 ROLLBACK;
