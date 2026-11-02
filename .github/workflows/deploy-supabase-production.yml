@@ -60,12 +60,12 @@ jobs:
 
       - name: Link production project
         shell: bash
-        run: supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
+        run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
 
       - name: Preview pending migrations
         shell: bash
-        run: supabase db push --linked --password "$SUPABASE_DB_PASSWORD" --dry-run
+        run: supabase db push --remote --password "$SUPABASE_DB_PASSWORD" --dry-run
 
       - name: Apply pending migrations
         shell: bash
-        run: supabase db push --linked --password "$SUPABASE_DB_PASSWORD"
+        run: supabase db push --remote --password "$SUPABASE_DB_PASSWORD" --yes
