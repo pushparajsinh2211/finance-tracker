@@ -104,6 +104,10 @@ Open `http://127.0.0.1:4200`.
 To stop the local database services later, run `npx supabase stop` from the repository root.
 
 
+## 🔭 Production Operations
+
+The API exposes privacy-safe liveness and readiness endpoints, structured JSON request logs, and correlation IDs for incident investigation. See [Production observability](docs/observability.md) for monitoring setup, health-check behavior, privacy boundaries, and the incident workflow.
+
 ## 🚢 Production Database Deployment
 
 Hosted Supabase migrations are deployed through the guarded **Deploy Supabase production** GitHub Actions workflow.

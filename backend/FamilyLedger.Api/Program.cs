@@ -1,9 +1,21 @@
 using System.Text;
+using FamilyLedger.Api.Health;
+using FamilyLedger.Api.Middleware;
 using FamilyLedger.Api.Services.FinanceHub;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.ClearProviders();
+builder.Logging.AddJsonConsole(options =>
+{
+    options.IncludeScopes = true;
+    options.TimestampFormat = "yyyy-MM-ddTHH:mm:ss.fffZ";
+    options.UseUtcTimestamp = true;
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -11,6 +23,15 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IStatementParser, StatementParser>();
 builder.Services.AddSingleton<IFinancialDataProvider, UnconfiguredAccountAggregatorProvider>();
+builder.Services.AddHealthChecks()
+    .AddCheck(
+        "self",
+        () => HealthCheckResult.Healthy(),
+        tags: new[] { "live" })
+    .AddCheck<SupabaseHealthCheck>(
+        "supabase-auth",
+        failureStatus: HealthStatus.Unhealthy,
+        tags: new[] { "ready" });
 
 builder.Services.AddCors(options =>
 {
@@ -44,7 +65,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             OnAuthenticationFailed = context =>
             {
-                Console.WriteLine($"JWT Auth Failed. Error: {context.Exception.Message}");
+                var logger = context.HttpContext.RequestServices
+                    .GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("Authentication");
+                logger.LogWarning(
+                    "JWT authentication failed for correlation ID {CorrelationId}",
+                    context.HttpContext.TraceIdentifier);
                 return Task.CompletedTask;
             }
         };
@@ -60,9 +86,23 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<ApiExceptionMiddleware>();
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("live"),
+    ResponseWriter = HealthResponseWriter.WriteAsync
+});
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+    ResponseWriter = HealthResponseWriter.WriteAsync
+});
 app.MapControllers();
+
 app.Run();
