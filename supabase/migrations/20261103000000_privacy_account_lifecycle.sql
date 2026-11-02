@@ -146,6 +146,8 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.get_account_deletion_status() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.get_account_deletion_status() FROM anon;
 REVOKE ALL ON FUNCTION public.export_my_data() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.export_my_data() FROM anon;
 GRANT EXECUTE ON FUNCTION public.get_account_deletion_status() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.export_my_data() TO authenticated;
