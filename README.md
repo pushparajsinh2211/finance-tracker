@@ -31,6 +31,11 @@ Use only masked account/card identifiers. PDF passwords are processed in memory 
 * **Cloud Receipt Storage:** Natively upload image/PDF documentation directly attached to transactions. Files autonomously sync to authenticated Supabase buckets.
 * **Family Head Aggregation:** Special RPC queries computing cross-dependent analytics specifically unlocking aggregated summary totals for Family Heads.
 
+### Privacy and account lifecycle
+* **Portable data export:** Authenticated users can download their user-owned finance data as JSON.
+* **Guarded deletion:** Permanent deletion requires an exact confirmation phrase and is blocked for a family head while other members remain.
+* **Private cleanup:** Auth deletion and receipt cleanup use a server-only Supabase service-role key. See [Privacy and account lifecycle](docs/privacy-account-lifecycle.md).
+
 ### Phase 4: Polish & Notifications
 * **Postgres Live Triggers:** Database autonomously fires notifications into the UI whenever a Budget is exceeded or a new member joins your Ledger framework.
 * **PWA Capable:** Complete Web-App Manifest mapping enabling direct standard mobile Home-Screen installation bypassing App Store fees natively!
@@ -64,7 +69,8 @@ Create `backend/FamilyLedger.Api/appsettings.Development.json` with the local AP
 {
   "Supabase": {
     "Url": "http://127.0.0.1:54321",
-    "AnonKey": "YOUR_LOCAL_ANON_KEY"
+    "AnonKey": "YOUR_LOCAL_ANON_KEY",
+    "ServiceRoleKey": "YOUR_LOCAL_SERVICE_ROLE_KEY"
   }
 }
 ```
@@ -88,6 +94,8 @@ Email__Smtp__Username=your-smtp-username
 Email__Smtp__Password=your-smtp-password
 ```
 If these values are not configured, the app will ask the Family Head to copy and share the invite code instead of pretending an email was sent.
+
+For production account deletion, configure `Supabase__ServiceRoleKey` only in the backend host's encrypted environment. Never expose this key to Angular or commit it. Data export and deletion preflight continue to run under the user's JWT.
 
 ### 3. Frontend (Angular)
 
