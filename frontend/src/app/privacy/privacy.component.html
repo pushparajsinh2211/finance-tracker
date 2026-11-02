@@ -1,0 +1,41 @@
+<section class="container privacy-page">
+  <header>
+    <p class="eyebrow">Account settings</p>
+    <h1>Privacy and your data</h1>
+    <p class="lead">Download a portable copy of your FinanceHub data or permanently delete your account.</p>
+  </header>
+
+  <div class="glass-panel card">
+    <h2>Export your data</h2>
+    <p>The JSON export contains your account, family membership, expenses, budgets, goals, loans, notifications, and imported transaction history.</p>
+    <button class="btn btn-primary" (click)="downloadExport()" [disabled]="exporting">
+      {{ exporting ? 'Preparing export…' : 'Download my data' }}
+    </button>
+    <p *ngIf="exportMessage" class="status">{{ exportMessage }}</p>
+  </div>
+
+  <div class="glass-panel card danger-zone">
+    <h2>Delete account</h2>
+    <p>This permanently deletes your login and user-owned financial data. This action cannot be undone.</p>
+
+    <div *ngIf="loadingStatus" class="status">Checking whether this account can be safely deleted…</div>
+
+    <div *ngIf="status?.blocker" class="alert">
+      <strong>Deletion is blocked.</strong>
+      <span>{{ status?.blocker }}</span>
+    </div>
+
+    <ng-container *ngIf="status?.canDelete">
+      <label for="delete-confirmation">Type <strong>DELETE MY ACCOUNT</strong> to confirm</label>
+      <input id="delete-confirmation" [(ngModel)]="confirmation" autocomplete="off" spellcheck="false"
+        placeholder="DELETE MY ACCOUNT">
+
+      <button class="btn delete-button" (click)="deleteAccount()"
+        [disabled]="deleting || confirmation.trim() !== confirmationPhrase">
+        {{ deleting ? 'Deleting account…' : 'Permanently delete my account' }}
+      </button>
+    </ng-container>
+
+    <p *ngIf="deleteMessage" class="error">{{ deleteMessage }}</p>
+  </div>
+</section>
