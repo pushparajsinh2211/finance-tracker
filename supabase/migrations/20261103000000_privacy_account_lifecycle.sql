@@ -107,7 +107,7 @@ BEGIN
             WHERE a.user_id = current_user_id
         ), '[]'::jsonb),
         'providerConnections', coalesce((
-            SELECT jsonb_agg(to_jsonb(c))
+            SELECT jsonb_agg(to_jsonb(c) - 'credential_secret_ref' - 'sync_cursor')
             FROM public.provider_connections c
             WHERE c.user_id = current_user_id
         ), '[]'::jsonb),
