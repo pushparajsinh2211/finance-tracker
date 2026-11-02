@@ -22,11 +22,12 @@ public sealed class ApiExceptionMiddleware
         catch (Exception exception) when (!context.Response.HasStarted)
         {
             _logger.LogError(
-                exception,
-                "Unhandled API exception for correlation ID {CorrelationId}",
+                "Unhandled API exception of type {ExceptionType} for correlation ID {CorrelationId}",
+                exception.GetType().FullName,
                 context.TraceIdentifier);
 
             context.Response.Clear();
+            context.Response.Headers[CorrelationIdMiddleware.HeaderName] = context.TraceIdentifier;
             context.Response.StatusCode = StatusCodes.Status500InternalServerError;
             context.Response.ContentType = "application/problem+json";
 
