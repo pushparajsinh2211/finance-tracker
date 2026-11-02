@@ -15,9 +15,12 @@
                 style="color: var(--text-muted); text-decoration: none;">Loans & Savings</a>
             <a routerLink="/family" routerLinkActive="active-link"
                 style="color: var(--text-muted); text-decoration: none;">Family</a>
+            <a routerLink="/privacy" routerLinkActive="active-link"
+                style="color: var(--text-muted); text-decoration: none;">Privacy</a>
 
             <div style="position: relative; margin-left: 1rem;">
                 <button (click)="toggleDropdown()"
+                    aria-label="Open notifications"
                     style="background: transparent; border: none; font-size: 1.2rem; cursor: pointer; position: relative; color: var(--text-main);">
                     🔔
                     <span *ngIf="unreadCount > 0" class="badge">{{ unreadCount }}</span>

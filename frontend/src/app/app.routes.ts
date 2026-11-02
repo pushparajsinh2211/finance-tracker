@@ -14,6 +14,14 @@ export const routes: Routes = [
     { path: 'forgot-password', component: ForgotPasswordComponent },
     { path: 'update-password', component: UpdatePasswordComponent },
     { path: 'onboarding', canActivate: [authGuard], component: OnboardingComponent },
+    {
+        path: 'privacy',
+        component: MainLayoutComponent,
+        canActivate: [authGuard],
+        children: [
+            { path: '', loadComponent: () => import('./privacy/privacy.component').then(m => m.PrivacyComponent) }
+        ]
+    },
 
     {
         path: '',
