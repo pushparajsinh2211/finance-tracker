@@ -20,12 +20,14 @@ Account deletion requires the exact confirmation phrase `DELETE MY ACCOUNT`.
 Before deletion, `get_account_deletion_status()` checks family ownership:
 
 - a regular member can delete their account;
-- a family head with no other members can delete their account and family;
-- a family head with other members is blocked, because deleting the owning auth record would cascade-delete shared family data.
+- a family head can delete only when no other user has a current membership or surviving family-linked records;
+- a family head with other members or former-member data is blocked, because deleting the owning auth record would cascade-delete shared family data.
 
 A blocked head must first transfer ownership (when that feature is available) or remove the remaining members. The API never bypasses this guard.
 
-The API lists the user's private receipt objects, deletes the Supabase Auth user through the Admin API, and then removes the listed objects. Database foreign keys cascade user-owned relational rows. If post-deletion receipt cleanup fails, the API logs only the status, count, and correlation ID—never object names, email addresses, tokens, or financial data.
+`begin_account_deletion()` locks the family row used by invite-code joins, rechecks all destructive-cascade conditions, and temporarily disables invitations. Failed external cleanup restores the prior invitation state.
+
+The API lists and removes the user's private receipt objects before calling the Supabase Admin Auth deletion endpoint, because Supabase rejects deletion of a user who still owns Storage objects. If receipt cleanup fails, the Auth user is not deleted. Database foreign keys then cascade user-owned relational rows after successful Auth deletion. Logs contain only status, count, and correlation ID—never object names, email addresses, tokens, or financial data.
 
 ## Required server secret
 
