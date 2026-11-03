@@ -1,21 +1,331 @@
-.active-link {
-    color: var(--primary) !important;
-    font-weight: 600 !important;
+:host {
+  position: relative;
+  z-index: 100;
 }
 
-.badge {
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    background-color: var(--danger);
-    color: #fff;
-    font-size: 0.65rem;
-    font-weight: 600;
-    border-radius: 99px;
-    padding: 0.1rem 0.35rem;
+.app-header {
+  position: sticky;
+  top: 0;
+  background: rgba(255, 255, 255, .88);
+  border-bottom: 1px solid rgba(226, 232, 240, .86);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .7);
+  backdrop-filter: blur(18px);
 }
 
-.top-nav .container > div {
+.nav-shell {
+  display: flex;
+  min-height: 76px;
+  gap: 1.25rem;
+  align-items: center;
+}
+
+.brand {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: .7rem;
+  align-items: center;
+  color: var(--text-main);
+  text-decoration: none;
+}
+
+.brand-mark {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 800;
+  place-items: center;
+  background: linear-gradient(145deg, #6d65f0, #4338ca);
+  border-radius: 12px;
+  box-shadow: 0 8px 18px rgba(79, 70, 229, .25);
+}
+
+.brand-copy {
+  display: flex;
+  line-height: 1.08;
+  flex-direction: column;
+}
+
+.brand-copy strong {
+  font-size: .98rem;
+  letter-spacing: -.03em;
+}
+
+.brand-copy small {
+  margin-top: .23rem;
+  color: var(--text-muted);
+  font-size: .63rem;
+  font-weight: 650;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.primary-nav {
+  display: flex;
+  min-width: 0;
+  margin-left: auto;
+  gap: .2rem;
+  align-items: center;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.primary-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.primary-nav a {
+  padding: .55rem .72rem;
+  color: var(--text-muted);
+  font-size: .78rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  border-radius: 9px;
+  transition: color var(--transition), background var(--transition);
+}
+
+.primary-nav a:hover {
+  color: var(--text-main);
+  background: var(--surface-muted);
+}
+
+.primary-nav a.active-link {
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.nav-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: .55rem;
+  align-items: center;
+}
+
+.notification-menu {
+  position: relative;
+}
+
+.icon-button,
+.sign-out-button {
+  display: inline-flex;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  background: white;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.icon-button {
+  position: relative;
+  width: 40px;
+}
+
+.icon-button:hover,
+.sign-out-button:hover {
+  color: var(--primary);
+  background: var(--primary-soft);
+  border-color: #c7d2fe;
+}
+
+.icon-button svg,
+.sign-out-button svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.sign-out-button {
+  padding: 0 .8rem;
+  gap: .45rem;
+  font-size: .75rem;
+  font-weight: 750;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  color: white;
+  font-size: .62rem;
+  font-weight: 800;
+  place-items: center;
+  background: var(--accent);
+  border: 2px solid white;
+  border-radius: 999px;
+}
+
+.notification-panel {
+  position: absolute;
+  top: calc(100% + .75rem);
+  right: 0;
+  width: min(360px, calc(100vw - 1.5rem));
+  overflow: hidden;
+  background: white;
+  border: 1px solid var(--border-subtle);
+  border-radius: 18px;
+  box-shadow: var(--shadow-float);
+}
+
+.notification-header {
+  display: flex;
+  padding: 1.1rem 1.15rem;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.notification-header h2 {
+  margin: .1rem 0 0;
+  font-size: 1rem;
+}
+
+.eyebrow {
+  color: var(--primary);
+  font-size: .62rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.text-button {
+  padding: 0;
+  color: var(--primary);
+  font-size: .72rem;
+  font-weight: 750;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.notification-empty {
+  display: flex;
+  padding: 2.3rem 1rem;
+  align-items: center;
+  color: var(--text-muted);
+  text-align: center;
+  flex-direction: column;
+}
+
+.notification-empty strong {
+  margin-top: .65rem;
+  color: var(--text-main);
+  font-size: .85rem;
+}
+
+.notification-empty small {
+  margin-top: .2rem;
+  font-size: .72rem;
+}
+
+.empty-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  color: var(--success);
+  place-items: center;
+  background: var(--success-soft);
+  border-radius: 50%;
+}
+
+.notification-list {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.notification-item {
+  position: relative;
+  display: grid;
+  padding: .9rem 1.1rem;
+  grid-template-columns: 7px 1fr;
+  gap: .65rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.notification-item:last-child {
+  border-bottom: 0;
+}
+
+.notification-item.is-read {
+  opacity: .62;
+}
+
+.unread-dot {
+  width: 7px;
+  height: 7px;
+  margin-top: .35rem;
+  background: var(--primary);
+  border-radius: 50%;
+}
+
+.notification-item time {
+  color: var(--text-soft);
+  font-size: .65rem;
+  font-weight: 650;
+}
+
+.notification-item p {
+  margin: .15rem 0 .3rem;
+  color: var(--text-main);
+  font-size: .78rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 1050px) {
+  .nav-shell {
+    padding: .8rem 0 .65rem;
     flex-wrap: wrap;
-    justify-content: flex-end;
+  }
+
+  .brand {
+    order: 1;
+  }
+
+  .nav-actions {
+    margin-left: auto;
+    order: 2;
+  }
+
+  .primary-nav {
+    width: 100%;
+    margin-left: 0;
+    padding-bottom: .15rem;
+    order: 3;
+  }
+}
+
+@media (max-width: 540px) {
+  .brand-copy small,
+  .sign-out-button span {
+    display: none;
+  }
+
+  .sign-out-button {
+    width: 40px;
+    padding: 0;
+  }
+
+  .nav-shell {
+    gap: .65rem;
+  }
+
+  .primary-nav a {
+    padding: .5rem .62rem;
+    font-size: .73rem;
+  }
 }
