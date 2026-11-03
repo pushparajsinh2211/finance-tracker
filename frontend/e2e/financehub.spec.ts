@@ -221,7 +221,8 @@ test('authenticated user can save a recurring cash expense and sign out', async 
   await page.locator('select[formcontrolname="categoryId"]').selectOption('category-food');
   await page.locator('input[formcontrolname="amount"]').fill('245.50');
   await page.locator('input[formcontrolname="note"]').fill('E2E grocery purchase');
-  await page.locator('#recurringToggle').check();
+  await page.getByText('Monthly recurring expense', { exact: true }).click();
+  await expect(page.locator('#recurringToggle')).toBeChecked();
   await page.getByRole('button', { name: 'Save expense' }).click();
 
   await expect(page.getByText('E2E grocery purchase')).toBeVisible();
