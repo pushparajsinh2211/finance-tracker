@@ -1,61 +1,90 @@
-<nav class="top-nav">
-    <div class="container" style="display: flex; justify-content: space-between; align-items: center; padding: 0;">
-        <a routerLink="/" class="logo" style="text-decoration: none;">FinanceHub</a>
+<header class="app-header">
+  <div class="nav-shell container">
+    <a routerLink="/dashboard" class="brand" aria-label="FinanceHub home">
+      <span class="brand-mark" aria-hidden="true">F</span>
+      <span class="brand-copy">
+        <strong>FinanceHub</strong>
+        <small>Family finance</small>
+      </span>
+    </a>
 
-        <div style="display: flex; gap: var(--space-6); align-items: center;">
-            <a routerLink="/dashboard" routerLinkActive="active-link"
-                style="color: var(--text-muted); text-decoration: none;">Manual expenses</a>
-            <a routerLink="/transactions" routerLinkActive="active-link"
-                style="color: var(--text-muted); text-decoration: none;">Imported transactions</a>
-            <a routerLink="/connections" routerLinkActive="active-link"
-                style="color: var(--text-muted); text-decoration: none;">Data sources</a>
-            <a routerLink="/budgets" routerLinkActive="active-link"
-                style="color: var(--text-muted); text-decoration: none;">Budgets</a>
-            <a routerLink="/finance" routerLinkActive="active-link"
-                style="color: var(--text-muted); text-decoration: none;">Loans & Savings</a>
-            <a routerLink="/family" routerLinkActive="active-link"
-                style="color: var(--text-muted); text-decoration: none;">Family</a>
-            <a routerLink="/privacy" routerLinkActive="active-link"
-                style="color: var(--text-muted); text-decoration: none;">Privacy</a>
+    <nav class="primary-nav" aria-label="Primary navigation">
+      <a routerLink="/dashboard" routerLinkActive="active-link">
+        <span>Expenses</span>
+      </a>
+      <a routerLink="/transactions" routerLinkActive="active-link">
+        <span>Transactions</span>
+      </a>
+      <a routerLink="/connections" routerLinkActive="active-link">
+        <span>Data sources</span>
+      </a>
+      <a routerLink="/budgets" routerLinkActive="active-link">
+        <span>Budgets</span>
+      </a>
+      <a routerLink="/finance" routerLinkActive="active-link">
+        <span>Goals & loans</span>
+      </a>
+      <a routerLink="/family" routerLinkActive="active-link">
+        <span>Family</span>
+      </a>
+      <a routerLink="/privacy" routerLinkActive="active-link">
+        <span>Privacy</span>
+      </a>
+    </nav>
 
-            <div style="position: relative; margin-left: 1rem;">
-                <button (click)="toggleDropdown()"
-                    aria-label="Open notifications"
-                    style="background: transparent; border: none; font-size: 1.2rem; cursor: pointer; position: relative; color: var(--text-main);">
-                    🔔
-                    <span *ngIf="unreadCount > 0" class="badge">{{ unreadCount }}</span>
-                </button>
+    <div class="nav-actions">
+      <div class="notification-menu">
+        <button
+          type="button"
+          class="icon-button"
+          (click)="toggleDropdown()"
+          [attr.aria-expanded]="showDropdown"
+          aria-haspopup="true"
+          aria-label="Open notifications">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>
+          </svg>
+          <span *ngIf="unreadCount > 0" class="notification-badge">{{ unreadCount }}</span>
+        </button>
 
-                <div *ngIf="showDropdown" class="glass-panel"
-                    style="position: absolute; right: 0; top: 100%; width: 300px; padding: 1rem; margin-top: 0.5rem; z-index: 1000; border-radius: var(--radius-md);">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid rgba(0, 0, 0, 0.1); padding-bottom: 0.5rem;">
-                        <h4 style="margin: 0; color: var(--text-main);">Notifications</h4>
-                        <button *ngIf="unreadCount > 0" (click)="markAllAsRead()"
-                            style="background: none; border: none; color: var(--primary); cursor: pointer; font-size: 0.8rem;">Mark
-                            all read</button>
-                    </div>
-
-                    <div *ngIf="notifications.length === 0"
-                        style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 1rem 0;">
-                        No notifications yet.
-                    </div>
-
-                    <div style="max-height: 300px; overflow-y: auto;">
-                        <div *ngFor="let n of notifications" [style.opacity]="n.isRead ? '0.6' : '1'"
-                            style="padding: 0.75rem 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 0.85rem;">
-                            <div style="color: var(--text-muted); font-size: 0.75rem; margin-bottom: 0.25rem;">{{
-                                n.createdAt | date:'short' }}</div>
-                            <div style="color: var(--text-main);">{{ n.message }}</div>
-                            <button *ngIf="!n.isRead" (click)="markAsRead(n.id)"
-                                style="background: none; border: none; color: var(--secondary); cursor: pointer; font-size: 0.75rem; margin-top: 0.25rem; padding: 0;">Mark
-                                read</button>
-                        </div>
-                    </div>
-                </div>
+        <section *ngIf="showDropdown" class="notification-panel" aria-label="Notifications">
+          <div class="notification-header">
+            <div>
+              <span class="eyebrow">Activity</span>
+              <h2>Notifications</h2>
             </div>
+            <button *ngIf="unreadCount > 0" type="button" class="text-button" (click)="markAllAsRead()">
+              Mark all read
+            </button>
+          </div>
 
-            <button class="btn btn-secondary" style="margin-left: var(--space-2);" (click)="logout()">Sign Out</button>
-        </div>
+          <div *ngIf="notifications.length === 0" class="notification-empty">
+            <span class="empty-icon" aria-hidden="true">✓</span>
+            <strong>You are all caught up</strong>
+            <small>New family activity will appear here.</small>
+          </div>
+
+          <div class="notification-list" *ngIf="notifications.length > 0">
+            <article *ngFor="let n of notifications" class="notification-item" [class.is-read]="n.isRead">
+              <span class="unread-dot" *ngIf="!n.isRead" aria-hidden="true"></span>
+              <div>
+                <time>{{ n.createdAt | date:'mediumDate' }}</time>
+                <p>{{ n.message }}</p>
+                <button *ngIf="!n.isRead" type="button" class="text-button" (click)="markAsRead(n.id)">
+                  Mark read
+                </button>
+              </div>
+            </article>
+          </div>
+        </section>
+      </div>
+
+      <button type="button" class="sign-out-button" (click)="logout()">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M10 17l5-5-5-5M15 12H3M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+        </svg>
+        <span>Sign out</span>
+      </button>
     </div>
-</nav>
+  </div>
+</header>
