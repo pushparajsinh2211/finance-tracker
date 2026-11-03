@@ -10,7 +10,8 @@ import { StorageService } from '../../storage.service';
   selector: 'app-expense-form',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
-  templateUrl: './expense-form.component.html'
+  templateUrl: './expense-form.component.html',
+  styleUrls: ['./expense-form.component.css']
 })
 export class ExpenseFormComponent implements OnInit {
   @Input() initialExpense: any = null;
