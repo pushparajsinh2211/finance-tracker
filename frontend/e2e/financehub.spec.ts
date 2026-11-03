@@ -205,7 +205,7 @@ test('family head can create a family and continue to the dashboard', async ({ p
   await page.getByRole('button', { name: 'Continue to Dashboard' }).click();
 
   await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByRole('heading', { name: 'Manual expenses' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Every expense, clearly in view.' })).toBeVisible();
 });
 
 test('authenticated user can save a recurring cash expense and sign out', async ({ page }) => {
@@ -217,12 +217,12 @@ test('authenticated user can save a recurring cash expense and sign out', async 
   await mockApi(page, state);
 
   await page.goto('/dashboard');
-  await page.getByRole('button', { name: '+ Add Expense' }).click();
+  await page.getByRole('button', { name: 'Add expense' }).click();
   await page.locator('select[formcontrolname="categoryId"]').selectOption('category-food');
   await page.locator('input[formcontrolname="amount"]').fill('245.50');
   await page.locator('input[formcontrolname="note"]').fill('E2E grocery purchase');
   await page.locator('#recurringToggle').check();
-  await page.getByRole('button', { name: 'Save Expense' }).click();
+  await page.getByRole('button', { name: 'Save expense' }).click();
 
   await expect(page.getByText('E2E grocery purchase')).toBeVisible();
   const createRequest = state.requests.find(request =>
@@ -236,7 +236,7 @@ test('authenticated user can save a recurring cash expense and sign out', async 
     receiptUrl: null
   });
 
-  await page.getByRole('button', { name: 'Sign Out' }).click();
+  await page.getByRole('button', { name: 'Sign out' }).click();
   await expect(page).toHaveURL(/\/login$/);
   await expect.poll(() => page.evaluate(() => localStorage.getItem('token'))).toBeNull();
 });
