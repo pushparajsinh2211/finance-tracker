@@ -17,16 +17,34 @@ import { TopNavComponent } from '../top-nav/top-nav.component';
   `,
   styles: [`
     .app-shell {
+      position: relative;
       display: flex;
-      flex-direction: column;
       min-height: 100vh;
+      flex-direction: column;
+      isolation: isolate;
     }
+
+    .app-shell::before {
+      position: fixed;
+      z-index: -1;
+      top: 5rem;
+      right: -8rem;
+      width: 22rem;
+      height: 22rem;
+      content: '';
+      pointer-events: none;
+      background: rgba(79, 70, 229, .055);
+      border-radius: 50%;
+      filter: blur(35px);
+    }
+
     .content-area {
       flex: 1;
-      animation: fadeIn 0.3s ease-out;
+      animation: content-enter .28s ease-out;
     }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(5px); }
+
+    @keyframes content-enter {
+      from { opacity: 0; transform: translateY(6px); }
       to { opacity: 1; transform: translateY(0); }
     }
   `]
