@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { ExpenseService } from '../expenses/expense.service';
 import { CategoryService } from '../categories/category.service';
 import { ExpenseFormComponent } from '../expenses/expense-form/expense-form.component';
+import { CategorySelectComponent } from '../ui/category-select/category-select.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, ExpenseFormComponent],
+  imports: [CommonModule, FormsModule, ExpenseFormComponent, CategorySelectComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
