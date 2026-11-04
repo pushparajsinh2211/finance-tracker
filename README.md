@@ -116,6 +116,8 @@ To stop the local database services later, run `npx supabase stop` from the repo
 
 The API exposes privacy-safe liveness and readiness endpoints, structured JSON request logs, and correlation IDs for incident investigation. See [Production observability](docs/observability.md) for monitoring setup, health-check behavior, privacy boundaries, and the incident workflow.
 
+A privacy-safe [production smoke workflow](docs/production-verification.md) automatically verifies the deployed frontend, API liveness, and Supabase Auth readiness after successful `master` CI.
+
 ## 🚢 Production Database Deployment
 
 Hosted Supabase migrations are deployed through the guarded **Deploy Supabase production** GitHub Actions workflow.
