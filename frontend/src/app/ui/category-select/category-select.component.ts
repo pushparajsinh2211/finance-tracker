@@ -30,6 +30,7 @@ export class CategorySelectComponent implements ControlValueAccessor {
   @Input() inputId = 'financehub-category-select';
   @Input() placeholder = 'Select a category';
   @Input() emptyLabel = 'No category';
+  @Input() ariaLabel = 'Categories';
   @Input() allowClear = false;
   @Input() options: CategorySelectOption[] = [];
 
