@@ -18,7 +18,7 @@
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"></path></svg>
   </button>
 
-  <div *ngIf="isOpen" class="select-popover" role="listbox" aria-label="Expense categories">
+  <div *ngIf="isOpen" class="select-popover" role="listbox" [attr.aria-label]="ariaLabel">
     <button
       *ngIf="allowClear"
       type="button"
