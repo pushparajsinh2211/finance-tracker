@@ -8,7 +8,8 @@ import { AuthService } from '../auth.service';
   selector: 'app-forgot-password',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule],
-  templateUrl: './forgot-password.component.html'
+  templateUrl: './forgot-password.component.html',
+  styleUrls: ['../auth-shell.css']
 })
 export class ForgotPasswordComponent implements OnDestroy {
   private readonly cooldownStorageKey = 'password-reset-cooldown-until';
