@@ -220,6 +220,10 @@ test('authenticated user can save a recurring cash expense and sign out', async 
 
   await page.goto('/dashboard');
   await page.getByRole('button', { name: 'Add expense' }).click();
+  const dateControl = page.locator('#expense-form-date');
+  await expect(dateControl).toHaveClass(/date-control/);
+  const dateIcon = await dateControl.evaluate(element => getComputedStyle(element).backgroundImage);
+  expect(dateIcon).not.toBe('none');
   await page.locator('select[formcontrolname="categoryId"]').selectOption('category-food');
   await page.locator('input[formcontrolname="amount"]').fill('245.50');
   await page.locator('input[formcontrolname="note"]').fill('E2E grocery purchase');
