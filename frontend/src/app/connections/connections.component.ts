@@ -25,6 +25,24 @@ interface StatementTransaction {
   needsReview: boolean;
 }
 
+interface StatementReconciliation {
+  totalDebits: number;
+  totalCredits: number;
+  openingBalance?: number;
+  closingBalance?: number;
+  calculatedClosingBalance?: number;
+  variance?: number;
+  status: 'matched' | 'mismatch' | 'unavailable';
+  message: string;
+}
+
+interface StatementRetention {
+  retained: boolean;
+  deleteAfter?: string;
+  retentionDays?: number;
+  message?: string;
+}
+
 interface StatementPreview {
   parser: string;
   parserVersion: string;
@@ -34,6 +52,8 @@ interface StatementPreview {
   reviewCount: number;
   errors: string[];
   transactions: StatementTransaction[];
+  reconciliation: StatementReconciliation;
+  usedOcr: boolean;
 }
 
 interface ImportResult {
@@ -45,6 +65,8 @@ interface ImportResult {
   importedCount: number;
   duplicateCount: number;
   reviewCount: number;
+  reconciliation: StatementReconciliation;
+  retention: StatementRetention;
 }
 
 @Component({
@@ -71,6 +93,10 @@ export class ConnectionsComponent implements OnInit {
   importError = '';
   previewing = false;
   committing = false;
+  retainOriginal = false;
+  retentionDays: 30 | 90 = 30;
+  confirmReconciliationMismatch = false;
+  deletingRetainedFile = false;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -126,6 +152,7 @@ export class ConnectionsComponent implements OnInit {
     this.preview = null;
     this.importResult = null;
     this.importError = '';
+    this.confirmReconciliationMismatch = false;
   }
 
   previewStatement(): void {
@@ -145,6 +172,7 @@ export class ConnectionsComponent implements OnInit {
     ).subscribe({
       next: preview => {
         this.preview = preview;
+        this.confirmReconciliationMismatch = false;
         this.previewing = false;
       },
       error: error => {
@@ -179,6 +207,32 @@ export class ConnectionsComponent implements OnInit {
     });
   }
 
+  deleteRetainedStatement(): void {
+    if (!this.importResult?.retention.retained) {
+      return;
+    }
+
+    this.deletingRetainedFile = true;
+    this.importError = '';
+    this.http.delete(
+      environment.apiUrl + '/api/financehub/imports/' + this.importResult.importId + '/statement'
+    ).subscribe({
+      next: () => {
+        if (this.importResult) {
+          this.importResult.retention = {
+            retained: false,
+            message: 'The retained original was deleted.'
+          };
+        }
+        this.deletingRetainedFile = false;
+      },
+      error: error => {
+        this.importError = this.readError(error);
+        this.deletingRetainedFile = false;
+      }
+    });
+  }
+
   private canSubmit(): boolean {
     return !!this.selectedFile && !!this.accountName.trim();
   }
@@ -195,6 +249,10 @@ export class ConnectionsComponent implements OnInit {
     if (this.password) {
       form.append('password', this.password);
     }
+
+    form.append('confirmReconciliationMismatch', String(this.confirmReconciliationMismatch));
+    form.append('retainOriginal', String(this.retainOriginal));
+    form.append('retentionDays', String(this.retentionDays));
 
     return form;
   }
