@@ -237,10 +237,16 @@ test('authenticated user can save a recurring cash expense and sign out', async 
   await page.goto('/dashboard');
   await page.getByRole('button', { name: 'Add expense' }).click();
   const dateControl = page.locator('#expense-form-date');
-  await expect(dateControl).toHaveClass(/date-control/);
-  const dateIcon = await dateControl.evaluate(element => getComputedStyle(element).backgroundImage);
-  expect(dateIcon).not.toBe('none');
-  await page.locator('select[formcontrolname="categoryId"]').selectOption('category-food');
+  await dateControl.click();
+  await expect(page.getByRole('dialog', { name: 'Choose expense date' })).toBeVisible();
+  await page.getByRole('button', { name: 'Today', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Choose expense date' })).toBeHidden();
+
+  const categoryControl = page.locator('#expense-form-category');
+  await categoryControl.click();
+  await expect(page.getByRole('listbox', { name: 'Expense categories' })).toBeVisible();
+  await page.getByRole('option', { name: 'Food' }).click();
+  await expect(categoryControl).toContainText('Food');
   await page.locator('input[formcontrolname="amount"]').fill('245.50');
   await page.locator('input[formcontrolname="note"]').fill('E2E grocery purchase');
   await page.getByText('Monthly recurring expense', { exact: true }).click();
