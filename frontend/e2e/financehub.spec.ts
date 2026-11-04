@@ -145,6 +145,22 @@ test('protected pages redirect unauthenticated users to login', async ({ page })
   await expect(page.getByRole('heading', { name: 'Welcome Back' })).toBeVisible();
 });
 
+test('authentication pages use a split desktop layout and focused mobile layout', async ({ page }) => {
+  await mockApi(page, initialState());
+
+  await page.goto('/login');
+  await expect(page.locator('.auth-story')).toBeVisible();
+  await expect(page.locator('.product-preview')).toBeVisible();
+  await expect(page.locator('.mobile-auth-brand')).toBeHidden();
+  await expect(page.getByRole('heading', { name: 'Welcome Back' })).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator('.auth-story')).toBeHidden();
+  await expect(page.locator('.mobile-auth-brand')).toBeVisible();
+  await expect(page.locator('#login-email')).toBeVisible();
+  await expect(page.locator('#login-password')).toBeVisible();
+});
+
 test('login stores the token and sends a user without a family to onboarding', async ({ page }) => {
   const state = initialState();
   await mockApi(page, state);
