@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { BudgetService } from '../budget.service';
 import { ExpenseService } from '../../expenses/expense.service';
 import { CategoryService } from '../../categories/category.service';
+import { CategorySelectComponent } from '../../ui/category-select/category-select.component';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../auth/auth.service';
 import { firstValueFrom } from 'rxjs';
@@ -12,7 +13,7 @@ import { TopNavComponent } from '../../ui/top-nav/top-nav.component';
 @Component({
   selector: 'app-budgets-view',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, TopNavComponent],
+  imports: [CommonModule, FormsModule, RouterModule, TopNavComponent, CategorySelectComponent],
   templateUrl: './budgets-view.component.html',
   styleUrls: ['./budgets-view.component.css']
 })
