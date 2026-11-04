@@ -27,6 +27,7 @@ interface CalendarDay {
 export class DatePickerComponent implements ControlValueAccessor {
   @Input() inputId = 'financehub-date-picker';
   @Input() placeholder = 'Select a date';
+  @Input() dialogLabel = 'Choose date';
   @Input() min = '';
   @Input() max = '';
 
