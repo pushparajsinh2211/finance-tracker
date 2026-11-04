@@ -1,81 +1,89 @@
-<div class="glass-panel" style="padding: 2rem; border-radius: var(--radius-lg); position: relative;">
-    <button type="button" class="btn close-btn" (click)="onCancel()"
-        style="position: absolute; right: 1rem; top: 1rem; background: transparent; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer; transition: color 0.3s; padding: 0.5rem;"
-        onmouseover="this.style.color='#F8FAFC'" onmouseout="this.style.color='#94A3B8'">&times;</button>
+<section class="expense-form-card">
+  <header class="form-header">
+    <div>
+      <span class="eyebrow">{{ initialExpense ? 'Update ledger' : 'New ledger entry' }}</span>
+      <h2>{{ initialExpense ? 'Edit expense' : 'Add an expense' }}</h2>
+      <p>{{ initialExpense ? 'Review the details and save your changes.' : 'Record a purchase in your family ledger.' }}</p>
+    </div>
+    <button type="button" class="close-button" (click)="onCancel()" aria-label="Close expense form">&times;</button>
+  </header>
 
-    <h2 style="margin-bottom: 1.5rem; font-size: 1.5rem; color: var(--text-main); font-family: 'Outfit', sans-serif;">
-        {{ initialExpense ? 'Edit Expense' : 'Log New Expense' }}
-    </h2>
+  <div class="alert-error" *ngIf="errorMsg" role="alert">{{ errorMsg }}</div>
 
-    <div class="alert-error" *ngIf="errorMsg">{{ errorMsg }}</div>
+  <form [formGroup]="expenseForm" (ngSubmit)="onSubmit()">
+    <div class="form-group">
+      <label class="form-label" for="expense-form-category">Category</label>
+      <select id="expense-form-category" class="form-control" formControlName="categoryId">
+        <option value="" disabled>Select a category</option>
+        <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
+      </select>
+    </div>
 
-    <form [formGroup]="expenseForm" (ngSubmit)="onSubmit()">
-        <div class="form-group">
-            <label class="form-label">Category</label>
-            <select class="form-control" formControlName="categoryId">
-                <option value="" disabled>Select a category</option>
-                <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
-            </select>
+    <div class="field-row">
+      <div class="form-group">
+        <label class="form-label" for="expense-form-amount">Amount (INR)</label>
+        <div class="amount-field">
+          <span aria-hidden="true">₹</span>
+          <input id="expense-form-amount" type="number" class="form-control" formControlName="amount" step="0.01" placeholder="0.00">
         </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="expense-form-date">Date</label>
+        <input id="expense-form-date" type="date" class="form-control" formControlName="date">
+      </div>
+    </div>
 
-        <div style="display: flex; gap: 1rem;">
-            <div class="form-group" style="flex: 1;">
-                <label class="form-label">Amount (INR)</label>
-                <input type="number" class="form-control" formControlName="amount" step="0.01" placeholder="0.00">
-            </div>
-            <div class="form-group" style="flex: 1;">
-                <label class="form-label">Date</label>
-                <input type="date" class="form-control" formControlName="date">
-            </div>
-        </div>
+    <div class="form-group">
+      <label class="form-label" for="expense-form-note">Description <span class="optional-label">Optional</span></label>
+      <input id="expense-form-note" type="text" class="form-control" formControlName="note" placeholder="What was this for?" maxlength="200">
+    </div>
 
-        <div class="form-group">
-            <label class="form-label">Note (Optional)</label>
-            <input type="text" class="form-control" formControlName="note" placeholder="What was this for?"
-                maxlength="200">
-        </div>
+    <div class="form-group">
+      <label class="form-label" for="expense-form-receipt">Receipt <span class="optional-label">Optional</span></label>
+      <label class="file-picker" for="expense-form-receipt">
+        <span class="file-picker-icon" aria-hidden="true">↑</span>
+        <span>
+          <strong>{{ selectedFile ? selectedFile.name : 'Choose a receipt' }}</strong>
+          <small>JPG, PNG, WebP or PDF</small>
+        </span>
+      </label>
+      <input
+        id="expense-form-receipt"
+        class="visually-hidden"
+        type="file"
+        (change)="onFileSelected($event)"
+        accept="image/jpeg,image/png,image/webp,application/pdf">
 
-        <div class="form-group">
-            <label class="form-label">Attach Receipt (Optional)</label>
-            <input type="file" class="form-control" (change)="onFileSelected($event)"
-                accept="image/jpeg,image/png,image/webp,application/pdf" style="padding: 0.5rem 1rem;">
+      <div *ngIf="existingReceiptPath && !removeExistingReceipt" class="receipt-actions">
+        <button type="button" class="btn btn-secondary" (click)="viewReceipt()" [disabled]="receiptLoading || isLoading">
+          {{ receiptLoading ? 'Opening…' : 'View existing receipt' }}
+        </button>
+        <button type="button" class="text-danger-button" (click)="removeReceipt()" [disabled]="isLoading">
+          Remove
+        </button>
+      </div>
+      <p *ngIf="removeExistingReceipt" class="receipt-note">The existing receipt will be removed when you save.</p>
+    </div>
 
-            <div *ngIf="existingReceiptPath && !removeExistingReceipt" style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
-                <button type="button" class="btn btn-secondary" (click)="viewReceipt()"
-                    [disabled]="receiptLoading || isLoading" style="font-size: 0.85rem;">
-                    {{ receiptLoading ? 'Opening...' : 'View existing receipt' }}
-                </button>
-                <button type="button" class="btn btn-secondary" (click)="removeReceipt()"
-                    [disabled]="isLoading" style="font-size: 0.85rem; color: var(--accent);">
-                    Remove receipt
-                </button>
-            </div>
-            <div *ngIf="removeExistingReceipt" style="margin-top: 0.5rem; color: var(--text-muted); font-size: 0.85rem;">
-                The existing receipt will be removed when you save.
-            </div>
-        </div>
+    <label class="recurring-toggle" for="recurringToggle">
+      <input type="checkbox" id="recurringToggle" formControlName="isRecurring">
+      <span class="toggle-control" aria-hidden="true"></span>
+      <span>
+        <strong>Monthly recurring expense</strong>
+        <small>Create the same expense automatically each month.</small>
+      </span>
+    </label>
 
-        <div class="form-group" style="flex-direction: row; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
-            <input type="checkbox" id="recurringToggle" formControlName="isRecurring"
-                style="width: 1.25rem; height: 1.25rem; cursor: pointer; accent-color: var(--primary);">
-            <label for="recurringToggle" class="form-label" style="margin-bottom: 0; cursor: pointer;">Mark as monthly
-                recurring</label>
-        </div>
+    <footer class="form-actions">
+      <button type="submit" class="btn btn-primary save-button" [disabled]="expenseForm.invalid || isLoading">
+        <span *ngIf="!isLoading">{{ initialExpense ? 'Save changes' : 'Save expense' }}</span>
+        <span *ngIf="isLoading && !uploadProgress" class="spinner"></span>
+        <span *ngIf="uploadProgress">Uploading… <span class="spinner compact-spinner"></span></span>
+      </button>
 
-        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-            <button type="submit" class="btn btn-primary" style="flex: 2;"
-                [disabled]="expenseForm.invalid || isLoading">
-                <span *ngIf="!isLoading">{{ initialExpense ? 'Save Changes' : 'Save Expense' }}</span>
-                <span *ngIf="isLoading && !uploadProgress" class="spinner"></span>
-                <span *ngIf="uploadProgress">Uploading... <span class="spinner"
-                        style="vertical-align: middle; width: 1rem; height: 1rem; margin-left: 0.5rem;"></span></span>
-            </button>
-
-            <button *ngIf="initialExpense" type="button" class="btn btn-secondary"
-                style="flex: 1; border-color: rgba(244, 63, 94, 0.4); color: var(--accent);" (click)="onDelete()"
-                [disabled]="isLoading">
-                Delete
-            </button>
-        </div>
-    </form>
-</div>
+      <button *ngIf="initialExpense" type="button" class="btn btn-danger" (click)="onDelete()" [disabled]="isLoading">
+        Delete
+      </button>
+    </footer>
+  </form>
+</section>

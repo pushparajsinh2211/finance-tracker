@@ -1,74 +1,141 @@
 <div class="dashboard-wrapper">
-    <!-- Top Nav removed (handled by MainLayout) -->
+  <main class="dashboard-content container">
+    <header class="dashboard-hero">
+      <div>
+        <span class="eyebrow">Spending workspace</span>
+        <h1>Every expense, clearly in view.</h1>
+        <p>Review {{ periodLabel }} spending, spot patterns, and keep your family ledger current.</p>
+      </div>
+      <button type="button" class="btn btn-primary add-expense-button" (click)="openAddForm()">
+        <span class="plus-icon" aria-hidden="true">+</span>
+        Add expense
+      </button>
+    </header>
 
-    <main class="dashboard-content container">
-        <header class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
-            <h1>Manual expenses</h1>
-            <button class="btn btn-primary" (click)="openAddForm()">+ Add Expense</button>
-        </header>
-
-        <div class="filters-bar card" style="display: flex; gap: var(--space-4); align-items: flex-end;">
-            <div class="form-group" style="margin-bottom: 0; flex: 1;">
-                <label class="form-label" style="font-size: 0.8rem;">Month</label>
-                <input type="month" class="form-control" [(ngModel)]="selectedMonth" (change)="onFilterChange()">
-            </div>
-            <div class="form-group" style="margin-bottom: 0; flex: 1;">
-                <label class="form-label" style="font-size: 0.8rem;">Category</label>
-                <select class="form-control" [(ngModel)]="selectedCategoryId" (change)="onFilterChange()">
-                    <option value="">All Categories</option>
-                    <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
-                </select>
-            </div>
+    <section class="summary-grid" aria-label="Expense summary">
+      <article class="summary-card summary-card-primary">
+        <div class="summary-icon" aria-hidden="true">₹</div>
+        <div>
+          <span class="summary-label">Total spent</span>
+          <strong>{{ totalSpent | currency:'INR':'symbol':'1.0-0' }}</strong>
+          <small>{{ periodLabel }}</small>
         </div>
+      </article>
 
-        <div class="card" style="padding: 0; overflow: hidden;">
-            <div *ngIf="isLoading" style="padding: 3rem; text-align: center;">
-                <span class="spinner" style="border-top-color: var(--primary);"></span>
-            </div>
-
-            <div *ngIf="!isLoading && expenses.length === 0"
-                style="padding: 3rem; text-align: center; color: var(--text-muted);">
-                <p>No expenses found for this period.</p>
-                <button class="btn btn-secondary" style="margin-top: 1rem;" (click)="openAddForm()">Log your first
-                    expense</button>
-            </div>
-
-            <table class="expense-table" *ngIf="!isLoading && expenses.length > 0">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Category</th>
-                        <th>Note</th>
-                        <th style="text-align: right;">Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr *ngFor="let exp of expenses" (click)="openEditForm(exp)" style="cursor: pointer;">
-                        <td style="color: var(--text-muted);">{{ exp.date | date:'mediumDate' }}</td>
-                        <td>
-                            <span class="category-badge"
-                                [style.backgroundColor]="getCategoryColor(exp.categoryId) + '33'"
-                                [style.color]="getCategoryColor(exp.categoryId)">
-                                {{ getCategoryName(exp.categoryId) }}
-                            </span>
-                        </td>
-                        <td>{{ exp.note || '-' }} <span *ngIf="exp.isRecurring"
-                                style="margin-left: 0.5rem; font-size: 0.75rem; color: var(--secondary);">↺</span></td>
-                        <td style="text-align: right; font-weight: 600; color: var(--text-main);">₹{{ exp.amount |
-                            number:'1.2-2' }}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+      <article class="summary-card">
+        <div class="summary-icon summary-icon-indigo" aria-hidden="true">#</div>
+        <div>
+          <span class="summary-label">Entries</span>
+          <strong>{{ expenses.length }}</strong>
+          <small>Recorded transactions</small>
         </div>
-    </main>
+      </article>
+
+      <article class="summary-card">
+        <div class="summary-icon summary-icon-amber" aria-hidden="true">↗</div>
+        <div>
+          <span class="summary-label">Average expense</span>
+          <strong>{{ averageExpense | currency:'INR':'symbol':'1.0-0' }}</strong>
+          <small>Per entry</small>
+        </div>
+      </article>
+
+      <article class="summary-card">
+        <div class="summary-icon summary-icon-green" aria-hidden="true">★</div>
+        <div>
+          <span class="summary-label">Top category</span>
+          <strong class="category-summary">{{ topCategory }}</strong>
+          <small>Highest spend</small>
+        </div>
+      </article>
+    </section>
+
+    <section class="filter-panel" aria-label="Expense filters">
+      <div class="filter-heading">
+        <span class="filter-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+        </span>
+        <div>
+          <strong>Refine your view</strong>
+          <small>Filter the ledger by period and category.</small>
+        </div>
+      </div>
+
+      <div class="filter-controls">
+        <div class="form-group">
+          <label class="form-label" for="expense-month">Month</label>
+          <input id="expense-month" type="month" class="form-control" [(ngModel)]="selectedMonth" (change)="onFilterChange()">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="expense-category">Category</label>
+          <select id="expense-category" class="form-control" [(ngModel)]="selectedCategoryId" (change)="onFilterChange()">
+            <option value="">All categories</option>
+            <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section class="ledger-card">
+      <header class="ledger-header">
+        <div>
+          <span class="eyebrow">Ledger</span>
+          <h2>Recent expenses</h2>
+          <p>Click any row to review or edit the entry.</p>
+        </div>
+        <span class="entry-count">{{ expenses.length }} {{ expenses.length === 1 ? 'entry' : 'entries' }}</span>
+      </header>
+
+      <div *ngIf="isLoading" class="loading-state" aria-live="polite">
+        <span class="spinner" aria-hidden="true"></span>
+        <span>Loading your expenses…</span>
+      </div>
+
+      <div *ngIf="!isLoading && expenses.length === 0" class="empty-state">
+        <div class="empty-state-icon" aria-hidden="true">₹</div>
+        <h3>No expenses in this view</h3>
+        <p>Start with your first entry or choose a different month and category.</p>
+        <button type="button" class="btn btn-primary" (click)="openAddForm()">Add your first expense</button>
+      </div>
+
+      <div class="table-scroll" *ngIf="!isLoading && expenses.length > 0">
+        <table class="expense-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Category</th>
+              <th>Description</th>
+              <th class="amount-column">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let exp of expenses" (click)="openEditForm(exp)" tabindex="0" (keydown.enter)="openEditForm(exp)">
+              <td class="date-cell">{{ exp.date | date:'mediumDate' }}</td>
+              <td>
+                <span class="category-badge">
+                  <span class="category-dot" [style.backgroundColor]="getCategoryColor(exp.categoryId)"></span>
+                  {{ getCategoryName(exp.categoryId) }}
+                </span>
+              </td>
+              <td class="note-cell">
+                {{ exp.note || 'No description' }}
+                <span *ngIf="exp.isRecurring" class="recurring-badge" title="Monthly recurring">Recurring</span>
+              </td>
+              <td class="amount-column">{{ exp.amount | currency:'INR':'symbol':'1.2-2' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
 </div>
 
-<!-- Modal Overlay for Expense Form -->
 <div class="modal-overlay animate-fade-in" *ngIf="showExpenseForm">
-    <div class="modal-container">
-        <app-expense-form [initialExpense]="selectedExpense" (formSaved)="onFormSaved($event)"
-            (formCancelled)="onFormCancelled()">
-        </app-expense-form>
-    </div>
+  <div class="modal-container" role="dialog" aria-modal="true" aria-label="Expense details">
+    <app-expense-form
+      [initialExpense]="selectedExpense"
+      (formSaved)="onFormSaved($event)"
+      (formCancelled)="onFormCancelled()">
+    </app-expense-form>
+  </div>
 </div>
