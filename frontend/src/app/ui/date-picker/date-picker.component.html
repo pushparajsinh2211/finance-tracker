@@ -11,7 +11,7 @@
   </button>
 
   <section *ngIf="isOpen" class="calendar-popover" role="dialog" aria-modal="false"
-    aria-label="Choose date" (click)="$event.stopPropagation()">
+    [attr.aria-label]="dialogLabel" (click)="$event.stopPropagation()">
     <header class="calendar-header">
       <button type="button" class="calendar-nav" (click)="moveYear(-1)" aria-label="Previous year">«</button>
       <button type="button" class="calendar-nav" (click)="moveMonth(-1)" aria-label="Previous month">‹</button>
