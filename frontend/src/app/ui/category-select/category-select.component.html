@@ -1,0 +1,37 @@
+<div class="category-select">
+  <button
+    type="button"
+    class="select-trigger"
+    [id]="inputId"
+    [class.is-open]="isOpen"
+    [class.has-value]="selectedOption"
+    [disabled]="isDisabled"
+    [attr.aria-expanded]="isOpen"
+    aria-haspopup="listbox"
+    (click)="toggle()">
+    <span
+      class="category-dot"
+      [class.placeholder-dot]="!selectedOption"
+      [style.backgroundColor]="selectedOption?.color || '#cbd5e1'"
+      aria-hidden="true"></span>
+    <span [class.placeholder]="!selectedOption">{{ selectedOption?.name || placeholder }}</span>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"></path></svg>
+  </button>
+
+  <div *ngIf="isOpen" class="select-popover" role="listbox" aria-label="Expense categories">
+    <button
+      *ngFor="let option of options; trackBy: trackOption"
+      type="button"
+      class="option-button"
+      role="option"
+      [class.is-selected]="option.id === value"
+      [attr.aria-selected]="option.id === value"
+      (click)="select(option)">
+      <span class="category-dot" [style.backgroundColor]="option.color || '#64748b'" aria-hidden="true"></span>
+      <span>{{ option.name }}</span>
+      <svg *ngIf="option.id === value" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"></path></svg>
+    </button>
+
+    <p *ngIf="options.length === 0" class="empty-options">No active categories are available.</p>
+  </div>
+</div>
