@@ -17,7 +17,8 @@
         inputId="expense-form-category"
         formControlName="categoryId"
         [options]="categories"
-        placeholder="Select a category">
+        placeholder="Select a category"
+        ariaLabel="Expense categories">
       </app-category-select>
     </div>
 
@@ -34,7 +35,8 @@
         <app-date-picker
           inputId="expense-form-date"
           formControlName="date"
-          placeholder="Select expense date">
+          placeholder="Select expense date"
+          dialogLabel="Choose expense date">
         </app-date-picker>
       </div>
     </div>
