@@ -21,9 +21,16 @@ Implemented:
 - Unified imported transaction search, filters, paginated review/category correction and import history.
 - Immutable audit events for imported-transaction corrections.
 
+Implemented in the import expansion:
+- Initial SBI, HDFC and ICICI bank/card header profiles with synthetic redacted fixtures.
+- Local OCR fallback for unprotected scanned PDFs, with every OCR row flagged for review.
+- Running-balance reconciliation, variance reporting and explicit mismatch confirmation.
+- Optional private original retention for 30 or 90 days with immediate and automatic expiry deletion.
+- Export and guarded account deletion workflows.
+
 Remaining:
-- Institution-specific redacted fixtures and parsers where generic formats do not reconcile.
-- Export/account deletion workflows and OCR for scanned statements.
+- Additional institution/version profiles as real export formats change.
+- Issuer-specific card-cycle reconciliation and improved OCR layout models.
 
 ## Phase 1 original scope
 
