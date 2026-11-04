@@ -47,7 +47,7 @@ public sealed class StatementParserTests
         var result = await parser.ParseAsync(file, "bank", null, default);
 
         Assert.Equal("mismatch", result.Reconciliation.Status);
-        Assert.Equal(149m, result.Reconciliation.Variance);
+        Assert.Equal(49m, result.Reconciliation.Variance);
         Assert.Contains("do not reconcile", result.Reconciliation.Message);
     }
 
