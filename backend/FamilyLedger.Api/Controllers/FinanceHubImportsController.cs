@@ -16,6 +16,7 @@ namespace FamilyLedger.Api.Controllers;
 [Route("api/financehub/imports")]
 public sealed class FinanceHubImportsController : ControllerBase
 {
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private readonly IStatementParser _parser;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _configuration;
@@ -186,8 +187,8 @@ public sealed class FinanceHubImportsController : ControllerBase
                 }
             }
 
-            result["retention"] = JsonSerializer.SerializeToNode(retention);
-            result["reconciliation"] = JsonSerializer.SerializeToNode(parsed.Reconciliation);
+            result["retention"] = JsonSerializer.SerializeToNode(retention, JsonOptions);
+            result["reconciliation"] = JsonSerializer.SerializeToNode(parsed.Reconciliation, JsonOptions);
             return Content(result.ToJsonString(), "application/json");
         }
         catch (Exception ex) when (ex is InvalidOperationException or UnauthorizedAccessException)
