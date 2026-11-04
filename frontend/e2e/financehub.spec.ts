@@ -8,6 +8,7 @@ type ApiState = {
   members: Array<Record<string, unknown>>;
   categories: Array<Record<string, unknown>>;
   expenses: Array<Record<string, unknown>>;
+  notifications: Array<Record<string, unknown>>;
   requests: Array<{ method: string; path: string; body: unknown }>;
   resetStatus?: number;
 };
@@ -17,6 +18,7 @@ function initialState(overrides: Partial<ApiState> = {}): ApiState {
     members: [],
     categories: [],
     expenses: [],
+    notifications: [],
     requests: [],
     ...overrides
   };
@@ -122,7 +124,7 @@ async function mockApi(page: Page, state: ApiState): Promise<void> {
     }
 
     if (method === 'GET' && path === '/api/notifications') {
-      await json(route, 200, []);
+      await json(route, 200, state.notifications);
       return;
     }
 
@@ -218,6 +220,10 @@ test('authenticated user can save a recurring cash expense and sign out', async 
 
   await page.goto('/dashboard');
   await page.getByRole('button', { name: 'Add expense' }).click();
+  const dateControl = page.locator('#expense-form-date');
+  await expect(dateControl).toHaveClass(/date-control/);
+  const dateIcon = await dateControl.evaluate(element => getComputedStyle(element).backgroundImage);
+  expect(dateIcon).not.toBe('none');
   await page.locator('select[formcontrolname="categoryId"]').selectOption('category-food');
   await page.locator('input[formcontrolname="amount"]').fill('245.50');
   await page.locator('input[formcontrolname="note"]').fill('E2E grocery purchase');
@@ -240,4 +246,30 @@ test('authenticated user can save a recurring cash expense and sign out', async 
   await page.getByRole('button', { name: 'Sign out' }).click();
   await expect(page).toHaveURL(/\/login$/);
   await expect.poll(() => page.evaluate(() => localStorage.getItem('token'))).toBeNull();
+});
+
+
+test('read notifications use the full notification panel width', async ({ page }) => {
+  const message = 'Siddharthsinh Parmar joined Test Family!';
+  const state = initialState({
+    members: [{ id: 'member-1', displayName: 'E2E User', role: 'Head' }],
+    notifications: [{
+      id: 'notification-1',
+      message,
+      isRead: true,
+      createdAt: '2026-11-03T12:00:00Z'
+    }]
+  });
+  await authenticate(page);
+  await mockApi(page, state);
+
+  await page.goto('/dashboard');
+  await page.getByRole('button', { name: 'Open notifications' }).click();
+
+  const notification = page.locator('.notification-item').filter({ hasText: message });
+  await expect(notification).toBeVisible();
+  const contentWidth = await notification.locator('div').evaluate(element =>
+    element.getBoundingClientRect().width
+  );
+  expect(contentWidth).toBeGreaterThan(250);
 });

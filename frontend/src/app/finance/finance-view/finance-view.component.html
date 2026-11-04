@@ -95,7 +95,7 @@
         </div>
         <div class="form-group">
             <label class="form-label">Deadline (Optional)</label>
-            <input type="date" class="form-control" [(ngModel)]="newSavings.deadline">
+            <input type="date" class="form-control date-control" [(ngModel)]="newSavings.deadline">
         </div>
         <button class="btn btn-primary btn-block" (click)="saveSavings()">Save Goal</button>
     </div>
@@ -125,7 +125,7 @@
         <div style="display: flex; gap: 1rem;">
             <div class="form-group" style="flex: 1;">
                 <label class="form-label">Start Date</label>
-                <input type="date" class="form-control" [(ngModel)]="newEmi.startDate">
+                <input type="date" class="form-control date-control" [(ngModel)]="newEmi.startDate">
             </div>
             <div class="form-group" style="flex: 1;">
                 <label class="form-label">Tenure (Months)</label>

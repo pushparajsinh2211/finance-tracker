@@ -262,7 +262,12 @@
 }
 
 .notification-item.is-read {
+  grid-template-columns: minmax(0, 1fr);
   opacity: .62;
+}
+
+.notification-item > div {
+  min-width: 0;
 }
 
 .unread-dot {
@@ -281,6 +286,7 @@
 
 .notification-item p {
   margin: .15rem 0 .3rem;
+  overflow-wrap: anywhere;
   color: var(--text-main);
   font-size: .78rem;
   line-height: 1.45;
