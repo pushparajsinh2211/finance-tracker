@@ -10,7 +10,8 @@ import { AuthService } from '../auth.service';
   selector: 'app-update-password',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule],
-  templateUrl: './update-password.component.html'
+  templateUrl: './update-password.component.html',
+  styleUrls: ['../auth-shell.css']
 })
 export class UpdatePasswordComponent implements OnInit {
   passwordForm: FormGroup;
