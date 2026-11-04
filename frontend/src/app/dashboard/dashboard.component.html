@@ -68,10 +68,16 @@
         </div>
         <div class="form-group">
           <label class="form-label" for="expense-category">Category</label>
-          <select id="expense-category" class="form-control" [(ngModel)]="selectedCategoryId" (change)="onFilterChange()">
-            <option value="">All categories</option>
-            <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
-          </select>
+          <app-category-select
+            inputId="expense-category"
+            [(ngModel)]="selectedCategoryId"
+            [options]="categories"
+            [allowClear]="true"
+            emptyLabel="All categories"
+            placeholder="All categories"
+            ariaLabel="Expense filter categories"
+            (ngModelChange)="onFilterChange()">
+          </app-category-select>
         </div>
       </div>
     </section>
