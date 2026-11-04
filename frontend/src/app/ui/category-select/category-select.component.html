@@ -20,6 +20,19 @@
 
   <div *ngIf="isOpen" class="select-popover" role="listbox" aria-label="Expense categories">
     <button
+      *ngIf="allowClear"
+      type="button"
+      class="option-button"
+      role="option"
+      [class.is-selected]="!value"
+      [attr.aria-selected]="!value"
+      (click)="clearSelection()">
+      <span class="category-dot placeholder-dot" aria-hidden="true"></span>
+      <span>{{ emptyLabel }}</span>
+      <svg *ngIf="!value" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"></path></svg>
+    </button>
+
+    <button
       *ngFor="let option of options; trackBy: trackOption"
       type="button"
       class="option-button"
