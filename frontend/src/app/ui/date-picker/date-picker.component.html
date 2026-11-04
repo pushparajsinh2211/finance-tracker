@@ -1,0 +1,42 @@
+<div class="date-picker">
+  <button type="button" class="picker-trigger" [id]="inputId" [class.is-open]="isOpen"
+    [class.has-value]="value" [disabled]="isDisabled" [attr.aria-expanded]="isOpen"
+    aria-haspopup="dialog" (click)="toggle()">
+    <svg class="trigger-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+      <path d="M16 3v4M8 3v4M3 10h18"></path>
+    </svg>
+    <span [class.placeholder]="!displayValue">{{ displayValue || placeholder }}</span>
+    <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"></path></svg>
+  </button>
+
+  <section *ngIf="isOpen" class="calendar-popover" role="dialog" aria-modal="false"
+    [attr.aria-label]="dialogLabel" (click)="$event.stopPropagation()">
+    <header class="calendar-header">
+      <button type="button" class="calendar-nav" (click)="moveYear(-1)" aria-label="Previous year">«</button>
+      <button type="button" class="calendar-nav" (click)="moveMonth(-1)" aria-label="Previous month">‹</button>
+      <strong aria-live="polite">{{ monthLabel }}</strong>
+      <button type="button" class="calendar-nav" (click)="moveMonth(1)" aria-label="Next month">›</button>
+      <button type="button" class="calendar-nav" (click)="moveYear(1)" aria-label="Next year">»</button>
+    </header>
+
+    <div class="weekday-grid" aria-hidden="true">
+      <span *ngFor="let weekday of weekdayLabels">{{ weekday }}</span>
+    </div>
+
+    <div class="day-grid" role="grid" [attr.aria-label]="monthLabel">
+      <button *ngFor="let day of calendarDays; trackBy: trackDay" type="button"
+        class="calendar-day" [class.outside-month]="day.outsideMonth"
+        [class.is-today]="day.today" [class.is-selected]="day.selected"
+        [disabled]="day.disabled" [attr.aria-label]="day.ariaLabel"
+        [attr.aria-selected]="day.selected" (click)="selectDay(day)">
+        {{ day.dayNumber }}
+      </button>
+    </div>
+
+    <footer class="calendar-footer">
+      <span>{{ displayValue ? 'Selected: ' + displayValue : 'No date selected' }}</span>
+      <button type="button" (click)="selectToday()" [disabled]="isTodayDisabled()">Today</button>
+    </footer>
+  </section>
+</div>

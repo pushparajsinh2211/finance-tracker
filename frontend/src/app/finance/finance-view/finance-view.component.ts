@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { DatePickerComponent } from '../../ui/date-picker/date-picker.component';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../auth/auth.service';
 import { SavingsService } from '../savings.service';
@@ -11,7 +12,7 @@ import { TopNavComponent } from '../../ui/top-nav/top-nav.component';
 @Component({
   selector: 'app-finance-view',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, TopNavComponent],
+  imports: [CommonModule, FormsModule, RouterModule, TopNavComponent, DatePickerComponent],
   templateUrl: './finance-view.component.html'
 })
 export class FinanceViewComponent implements OnInit {

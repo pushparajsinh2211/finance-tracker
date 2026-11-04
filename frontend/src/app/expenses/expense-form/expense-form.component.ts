@@ -5,11 +5,13 @@ import { firstValueFrom } from 'rxjs';
 import { ExpenseService } from '../expense.service';
 import { CategoryService } from '../../categories/category.service';
 import { StorageService } from '../../storage.service';
+import { DatePickerComponent } from '../../ui/date-picker/date-picker.component';
+import { CategorySelectComponent } from '../../ui/category-select/category-select.component';
 
 @Component({
   selector: 'app-expense-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, DatePickerComponent, CategorySelectComponent],
   templateUrl: './expense-form.component.html',
   styleUrls: ['./expense-form.component.css']
 })

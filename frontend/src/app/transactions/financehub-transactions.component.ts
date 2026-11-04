@@ -3,6 +3,8 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { CategoryService } from '../categories/category.service';
+import { CategorySelectComponent } from '../ui/category-select/category-select.component';
+import { DatePickerComponent } from '../ui/date-picker/date-picker.component';
 import {
   FinanceHubAccountOption,
   FinanceHubTransaction,
@@ -20,7 +22,7 @@ interface CategoryOption {
 @Component({
   selector: 'app-financehub-transactions',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, CategorySelectComponent, DatePickerComponent],
   templateUrl: './financehub-transactions.component.html',
   styleUrls: ['./financehub-transactions.component.css']
 })
