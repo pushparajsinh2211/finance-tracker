@@ -1,4 +1,7 @@
-:host {
+app-login,
+app-register,
+app-forgot-password,
+app-update-password {
   display: block;
   min-height: 100svh;
 }
