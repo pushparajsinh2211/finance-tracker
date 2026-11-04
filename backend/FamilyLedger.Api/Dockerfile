@@ -11,6 +11,12 @@ RUN dotnet publish "./FamilyLedger.Api.csproj" -c Release -o /app/publish /p:Use
 
 # Serve locally
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
+
+# Local-only OCR: statement content never leaves the API container.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends poppler-utils tesseract-ocr \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 COPY --from=build /app/publish .
 

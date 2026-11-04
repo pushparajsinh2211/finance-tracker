@@ -21,7 +21,10 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpClient();
+builder.Services.AddSingleton<IStatementOcrService, TesseractStatementOcrService>();
 builder.Services.AddScoped<IStatementParser, StatementParser>();
+builder.Services.AddScoped<IStatementRetentionService, SupabaseStatementRetentionService>();
+builder.Services.AddHostedService<StatementRetentionCleanupService>();
 builder.Services.AddSingleton<IFinancialDataProvider, UnconfiguredAccountAggregatorProvider>();
 builder.Services.AddHealthChecks()
     .AddCheck(

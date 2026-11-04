@@ -24,6 +24,11 @@ jobs:
       - run: dotnet build --configuration Release --no-restore
       - name: Run backend unit and controlled chaos tests
         run: dotnet test ../FamilyLedger.Api.Tests/FamilyLedger.Api.Tests.csproj --configuration Release --no-restore
+      - name: Validate API container OCR dependencies
+        run: |
+          docker build --tag financehub-api-ci .
+          docker run --rm --entrypoint sh financehub-api-ci -c \
+            'pdftoppm -v >/dev/null 2>&1 && tesseract --version >/dev/null 2>&1'
 
   frontend:
     runs-on: ubuntu-latest

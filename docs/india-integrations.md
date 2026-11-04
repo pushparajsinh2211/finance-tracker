@@ -10,7 +10,7 @@ The preferred automatic path is the RBI Account Aggregator ecosystem, using a co
 
 Coverage varies by institution, account type and provider. During discovery, verify supported FIPs, refresh frequency, transaction history window, webhook/polling behavior, sandbox fidelity, data residency, pricing and grievance handling. Build one adapter interface so a provider can be replaced without changing the canonical ledger.
 
-Fallbacks are user-uploaded CSV/text-PDF statements and manual entry. The generic parser always shows a review screen; institution/version-specific parsers are still needed for formats that do not reconcile.
+Fallbacks are user-uploaded CSV/text-PDF statements and manual entry. The generic parser always shows a review screen. Initial SBI, HDFC and ICICI bank/card header profiles have redacted contract fixtures; additional institution/version-specific profiles remain necessary as formats change.
 
 ## Credit cards
 
@@ -30,7 +30,7 @@ Cash is first-party data and is available now through existing manual expense en
 
 ## Statement imports
 
-The current generic parser accepts common date, narration, debit, credit, amount, direction and reference headers. Add redacted fixtures and dedicated parsers per institution when its format cannot be reconciled. Every import has a preview, detected account, date range, row count, validation errors and duplicate estimate before commit. Store the original file only when the user opts in and define a retention period. Password-protected PDFs are processed in memory by the API; passwords are not logged or persisted. Scanned-image PDFs are rejected until an OCR pipeline is implemented.
+The current generic parser accepts common date, narration, debit, credit, amount, direction and reference headers. Add redacted fixtures and dedicated parsers per institution when its format cannot be reconciled. Every import has a preview, detected account, date range, row count, validation errors and duplicate estimate before commit. Store the original file only when the user opts in and define a retention period. Password-protected PDFs are processed in memory by the API; passwords are not logged or persisted. Scanned-image PDFs use local Poppler and Tesseract OCR for up to 20 pages. OCR rows are always review-required; password-protected scans must be exported unlocked or as CSV so passwords never enter process arguments.
 
 ## Provider selection checklist
 

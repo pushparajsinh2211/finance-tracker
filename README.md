@@ -16,9 +16,10 @@ FamilyLedger is a comprehensive, full-stack personal and family finance manageme
 * **Unified imported ledger:** Filter bank/card transactions, review flagged entries, assign family categories, and inspect import history.
 * **Audited corrections:** Category and review-state changes use ownership-checked database RPCs and immutable audit events.
 * **UPI detection:** UPI/IMPS/NEFT/RTGS/card/ATM rails are inferred from statement narration; UPI is not a separate live connection.
-* **Current limits:** Scanned PDFs need OCR, institution-specific formats may need a dedicated parser, and production bank/card/UPI sync still requires regulated-provider onboarding.
+* **Expanded imports:** Initial SBI, HDFC and ICICI bank/card CSV profiles, local scanned-PDF OCR, running-balance reconciliation, and optional private 30/90-day original retention.
+* **Current limits:** Issuer formats can change, unclear scans may still need CSV, and production bank/card/UPI sync still requires regulated-provider onboarding.
 
-Use only masked account/card identifiers. PDF passwords are processed in memory and are never persisted.
+Use only masked account/card identifiers. PDF passwords are processed in memory and are never persisted. See [Statement import security and reconciliation](docs/statement-imports.md).
 
 ### Phase 2: Budgets & Automation
 * **Categorical Budgets:** Map maximum spending limits across any specific active category per month.

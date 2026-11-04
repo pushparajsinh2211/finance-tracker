@@ -21,4 +21,8 @@
     <ProjectReference Include="../FamilyLedger.Api/FamilyLedger.Api.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="Fixtures/**/*.csv" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

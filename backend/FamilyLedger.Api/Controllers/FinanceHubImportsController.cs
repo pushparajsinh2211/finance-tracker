@@ -3,6 +3,8 @@ using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using FamilyLedger.Api.Services.FinanceHub;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,18 +16,22 @@ namespace FamilyLedger.Api.Controllers;
 [Route("api/financehub/imports")]
 public sealed class FinanceHubImportsController : ControllerBase
 {
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private readonly IStatementParser _parser;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _configuration;
+    private readonly IStatementRetentionService _retentionService;
 
     public FinanceHubImportsController(
         IStatementParser parser,
         IHttpClientFactory httpClientFactory,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IStatementRetentionService retentionService)
     {
         _parser = parser;
         _httpClientFactory = httpClientFactory;
         _configuration = configuration;
+        _retentionService = retentionService;
     }
 
     [HttpPost("preview")]
@@ -55,7 +61,9 @@ public sealed class FinanceHubImportsController : ControllerBase
                 parsed.Transactions.Count,
                 parsed.Transactions.Count(transaction => transaction.NeedsReview),
                 parsed.Errors,
-                parsed.Transactions.Take(100).ToArray()));
+                parsed.Transactions.Take(100).ToArray(),
+                parsed.Reconciliation,
+                parsed.UsedOcr));
         }
         catch (Exception ex) when (ex is InvalidOperationException or UnauthorizedAccessException)
         {
@@ -96,6 +104,16 @@ public sealed class FinanceHubImportsController : ControllerBase
             if (parsed.Transactions.Count == 0)
                 return UnprocessableEntity(new { Message = "No transactions are available to import." });
 
+            if (parsed.Reconciliation.Status == "mismatch" &&
+                !request.ConfirmReconciliationMismatch)
+            {
+                return UnprocessableEntity(new
+                {
+                    Message = "The statement totals do not reconcile. Review the variance and explicitly confirm before importing.",
+                    Reconciliation = parsed.Reconciliation
+                });
+            }
+
             var idempotencyKey = CreateIdempotencyKey(
                 parsed.FileChecksum,
                 sourceType,
@@ -135,7 +153,43 @@ public sealed class FinanceHubImportsController : ControllerBase
                     new { Message = "The validated statement could not be committed." });
             }
 
-            return Content(content, "application/json");
+            var result = JsonNode.Parse(content)?.AsObject()
+                ?? throw new InvalidOperationException("The import response was invalid.");
+            var retention = new StatementRetentionResult(
+                false,
+                null,
+                null,
+                "The original statement was not retained.");
+
+            if (request.RetainOriginal)
+            {
+                if (!TryGetUserId(out var userId) ||
+                    !result.TryGetPropertyValue("importId", out var importNode) ||
+                    !Guid.TryParse(importNode?.GetValue<string>(), out var importRunId))
+                {
+                    throw new InvalidOperationException("The retained statement could not be linked to its import.");
+                }
+
+                try
+                {
+                    retention = await _retentionService.RetainAsync(
+                        request.File,
+                        userId,
+                        importRunId,
+                        parsed.FileChecksum,
+                        request.RetentionDays,
+                        Request.Headers.Authorization.FirstOrDefault() ?? "",
+                        cancellationToken);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    retention = new StatementRetentionResult(false, null, null, ex.Message);
+                }
+            }
+
+            result["retention"] = JsonSerializer.SerializeToNode(retention, JsonOptions);
+            result["reconciliation"] = JsonSerializer.SerializeToNode(parsed.Reconciliation, JsonOptions);
+            return Content(result.ToJsonString(), "application/json");
         }
         catch (Exception ex) when (ex is InvalidOperationException or UnauthorizedAccessException)
         {
@@ -146,6 +200,30 @@ public sealed class FinanceHubImportsController : ControllerBase
             return StatusCode(
                 StatusCodes.Status502BadGateway,
                 new { Message = "The statement import failed. No partial import was kept." });
+        }
+    }
+
+    [HttpDelete("{importRunId:guid}/statement")]
+    public async Task<IActionResult> DeleteRetainedStatement(
+        Guid importRunId,
+        CancellationToken cancellationToken)
+    {
+        var authorization = Request.Headers.Authorization.FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(authorization))
+            return Unauthorized(new { Message = "Authentication is required." });
+
+        try
+        {
+            await _retentionService.DeleteAsync(importRunId, authorization, cancellationToken);
+            return NoContent();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound(new { Message = "No retained statement exists for this import." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(StatusCodes.Status502BadGateway, new { Message = ex.Message });
         }
     }
 
@@ -165,6 +243,9 @@ public sealed class FinanceHubImportsController : ControllerBase
             return "Masked identifier must be 32 characters or fewer.";
         if (masked != null && System.Text.RegularExpressions.Regex.IsMatch(masked, "\\d{5,}"))
             return "Store only a masked identifier or the last four digits.";
+
+        if (request.RetainOriginal && request.RetentionDays is not (30 or 90))
+            return "Original statements can be retained for 30 or 90 days.";
 
         return null;
     }
@@ -233,6 +314,9 @@ public sealed class StatementImportRequest
     public string AccountName { get; set; } = "";
     public string? MaskedIdentifier { get; set; }
     public string? Password { get; set; }
+    public bool ConfirmReconciliationMismatch { get; set; }
+    public bool RetainOriginal { get; set; }
+    public int RetentionDays { get; set; } = 30;
 }
 
 public sealed record StatementPreviewResponse(
@@ -243,4 +327,6 @@ public sealed record StatementPreviewResponse(
     int TransactionCount,
     int ReviewCount,
     IReadOnlyList<string> Errors,
-    IReadOnlyList<StatementTransaction> Transactions);
+    IReadOnlyList<StatementTransaction> Transactions,
+    StatementReconciliation Reconciliation,
+    bool UsedOcr);

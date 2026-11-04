@@ -11,22 +11,31 @@ public sealed partial class StatementParser : IStatementParser
 {
     public const long MaximumFileBytes = 10 * 1024 * 1024;
     public const int MaximumTransactions = 5000;
-    private const string ParserVersion = "1.0.0";
+    private const string ParserVersion = "2.0.0";
+
+    private readonly IStatementOcrService _ocrService;
+
+    public StatementParser(IStatementOcrService ocrService)
+    {
+        _ocrService = ocrService;
+    }
 
     private static readonly string[] DateAliases =
         ["date", "transactiondate", "txndate", "valuedate", "postingdate"];
     private static readonly string[] NarrationAliases =
-        ["narration", "description", "particulars", "transactiondetails", "remarks", "details"];
+        ["narration", "description", "particulars", "transactiondetails", "transactionremarks", "transactiondescription", "remarks", "details"];
     private static readonly string[] DebitAliases =
-        ["debit", "debitamount", "withdrawal", "withdrawalamount", "dr"];
+        ["debit", "debitamount", "withdrawal", "withdrawalamount", "withdrawalamt", "withdrawalamountinr", "dr"];
     private static readonly string[] CreditAliases =
-        ["credit", "creditamount", "deposit", "depositamount", "cr"];
+        ["credit", "creditamount", "deposit", "depositamount", "depositamt", "depositamountinr", "cr"];
     private static readonly string[] AmountAliases =
-        ["amount", "transactionamount", "txnamount"];
+        ["amount", "transactionamount", "txnamount", "amountinrs", "amountinr"];
     private static readonly string[] DirectionAliases =
         ["type", "transactiontype", "drcr", "debitcredit", "direction"];
     private static readonly string[] ReferenceAliases =
-        ["reference", "referenceno", "refno", "transactionid", "txnid", "utr", "rrn", "chequeno"];
+        ["reference", "referenceno", "refno", "transactionid", "txnid", "utr", "rrn", "chequeno", "chqrefno", "refnochequeno"];
+    private static readonly string[] BalanceAliases =
+        ["balance", "closingbalance", "closingbalanceinr", "balanceinr"];
 
     private static readonly string[] DateFormats =
     [
@@ -55,7 +64,7 @@ public sealed partial class StatementParser : IStatementParser
         return extension switch
         {
             ".csv" => ParseCsv(bytes, sourceType, checksum),
-            ".pdf" => ParsePdf(bytes, sourceType, checksum, password),
+            ".pdf" => await ParsePdfAsync(bytes, sourceType, checksum, password, cancellationToken),
             _ => throw new InvalidOperationException("Only CSV and PDF statements are supported.")
         };
     }
@@ -68,7 +77,12 @@ public sealed partial class StatementParser : IStatementParser
         if (rows.Count < 2)
             throw new InvalidOperationException("The CSV must contain a header and at least one transaction.");
 
-        var headers = rows[0].Select(NormalizeHeader).ToArray();
+        var headerRowIndex = FindHeaderRow(rows);
+        if (headerRowIndex < 0)
+            throw new InvalidOperationException("A supported transaction header row was not found in the first 20 CSV rows.");
+
+        var headers = rows[headerRowIndex].Select(NormalizeHeader).ToArray();
+        var profile = StatementProfileDetector.Detect(headers, sourceType);
         var dateIndex = FindHeader(headers, DateAliases);
         var narrationIndex = FindHeader(headers, NarrationAliases);
         var debitIndex = FindHeader(headers, DebitAliases);
@@ -76,16 +90,13 @@ public sealed partial class StatementParser : IStatementParser
         var amountIndex = FindHeader(headers, AmountAliases);
         var directionIndex = FindHeader(headers, DirectionAliases);
         var referenceIndex = FindHeader(headers, ReferenceAliases);
-
-        if (dateIndex < 0 || narrationIndex < 0)
-            throw new InvalidOperationException("CSV headers must include date and narration/description columns.");
-        if (debitIndex < 0 && creditIndex < 0 && amountIndex < 0)
-            throw new InvalidOperationException("CSV headers must include debit/credit columns or an amount column.");
+        var balanceIndex = FindHeader(headers, BalanceAliases);
 
         var transactions = new List<StatementTransaction>();
+        var closingBalances = new List<decimal?>();
         var errors = new List<string>();
 
-        for (var rowNumber = 1; rowNumber < rows.Count; rowNumber++)
+        for (var rowNumber = headerRowIndex + 1; rowNumber < rows.Count; rowNumber++)
         {
             var row = rows[rowNumber];
             if (row.All(string.IsNullOrWhiteSpace))
@@ -104,6 +115,7 @@ public sealed partial class StatementParser : IStatementParser
                     amountIndex,
                     directionIndex,
                     referenceIndex));
+                closingBalances.Add(ParseOptionalAmount(GetCell(row, balanceIndex)));
             }
             catch (InvalidOperationException ex)
             {
@@ -117,13 +129,15 @@ public sealed partial class StatementParser : IStatementParser
         if (transactions.Count == 0)
             throw new InvalidOperationException("No valid transactions were found in the CSV.");
 
+        var indexedTransactions = AddOccurrenceIndexes(transactions);
         return new StatementParseResult(
-            "generic-csv",
+            profile.Id,
             ParserVersion,
             "csv",
             checksum,
-            AddOccurrenceIndexes(transactions),
-            errors.Take(100).ToArray());
+            indexedTransactions,
+            errors.Take(100).ToArray(),
+            BuildReconciliation(indexedTransactions, closingBalances, sourceType));
     }
 
     private static StatementTransaction ParseCsvTransaction(
@@ -189,11 +203,12 @@ public sealed partial class StatementParser : IStatementParser
             needsReview);
     }
 
-    private static StatementParseResult ParsePdf(
+    private async Task<StatementParseResult> ParsePdfAsync(
         byte[] bytes,
         string sourceType,
         string checksum,
-        string? password)
+        string? password,
+        CancellationToken cancellationToken)
     {
         var options = string.IsNullOrWhiteSpace(password)
             ? null
@@ -213,9 +228,54 @@ public sealed partial class StatementParser : IStatementParser
             lines.AddRange(text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries));
         }
 
-        var transactions = new List<StatementTransaction>();
+        var transactions = ParsePdfLines(lines, sourceType);
+        var usedOcr = false;
         var errors = new List<string>();
+        var extractedCharacterCount = lines.Sum(line => line.Count(character => !char.IsWhiteSpace(character)));
 
+        if (transactions.Count == 0 && extractedCharacterCount < 80)
+        {
+            var recognizedText = await _ocrService.RecognizePdfAsync(
+                bytes,
+                password,
+                cancellationToken);
+            var ocrLines = recognizedText.Split(
+                ['\r', '\n'],
+                StringSplitOptions.RemoveEmptyEntries);
+            transactions = ParsePdfLines(ocrLines, sourceType)
+                .Select(item => item with { NeedsReview = true })
+                .ToList();
+            usedOcr = true;
+            errors.Add("This scanned PDF was read with OCR. Verify every recognized row before relying on it.");
+        }
+
+        if (transactions.Count == 0)
+        {
+            errors.Add(
+                extractedCharacterCount < 80
+                    ? "OCR did not recognize transaction rows. Try a clearer scan or CSV export."
+                    : "No transaction rows could be recognized. This text layout needs a dedicated institution parser.");
+        }
+
+        var indexedTransactions = AddOccurrenceIndexes(transactions);
+        return new StatementParseResult(
+            usedOcr ? "tesseract-ocr-pdf" : "generic-text-pdf",
+            ParserVersion,
+            "pdf",
+            checksum,
+            indexedTransactions,
+            errors,
+            StatementReconciliation.Unavailable(
+                indexedTransactions,
+                "Balance reconciliation is unavailable for this PDF layout."),
+            usedOcr);
+    }
+
+    private static List<StatementTransaction> ParsePdfLines(
+        IEnumerable<string> lines,
+        string sourceType)
+    {
+        var transactions = new List<StatementTransaction>();
         foreach (var originalLine in lines)
         {
             var line = WhitespaceRegex().Replace(originalLine.Trim(), " ");
@@ -224,21 +284,11 @@ public sealed partial class StatementParser : IStatementParser
 
             transactions.Add(transaction!);
             if (transactions.Count > MaximumTransactions)
-                throw new InvalidOperationException($"A statement can contain at most {MaximumTransactions} transactions.");
+                throw new InvalidOperationException(
+                    $"A statement can contain at most {MaximumTransactions} transactions.");
         }
 
-        if (transactions.Count == 0)
-        {
-            errors.Add("No transaction rows could be recognized. Scanned PDFs and institution-specific layouts require OCR or a dedicated parser.");
-        }
-
-        return new StatementParseResult(
-            "generic-text-pdf",
-            ParserVersion,
-            "pdf",
-            checksum,
-            AddOccurrenceIndexes(transactions),
-            errors);
+        return transactions;
     }
 
     private static bool TryParsePdfLine(
@@ -386,6 +436,69 @@ public sealed partial class StatementParser : IStatementParser
 
     private static string NormalizeHeader(string value) =>
         NonAlphaNumericRegex().Replace(value.Trim().ToLowerInvariant(), "");
+
+    private static int FindHeaderRow(IReadOnlyList<string[]> rows)
+    {
+        var maximum = Math.Min(rows.Count, 20);
+        for (var rowIndex = 0; rowIndex < maximum; rowIndex++)
+        {
+            var headers = rows[rowIndex].Select(NormalizeHeader).ToArray();
+            var hasIdentity = FindHeader(headers, DateAliases) >= 0
+                && FindHeader(headers, NarrationAliases) >= 0;
+            var hasAmount = FindHeader(headers, DebitAliases) >= 0
+                || FindHeader(headers, CreditAliases) >= 0
+                || FindHeader(headers, AmountAliases) >= 0;
+            if (hasIdentity && hasAmount)
+                return rowIndex;
+        }
+
+        return -1;
+    }
+
+    private static StatementReconciliation BuildReconciliation(
+        IReadOnlyList<StatementTransaction> transactions,
+        IReadOnlyList<decimal?> closingBalances,
+        string sourceType)
+    {
+        if (sourceType != "bank" ||
+            transactions.Count == 0 ||
+            closingBalances.Count != transactions.Count ||
+            closingBalances[0] is not decimal firstClosing ||
+            closingBalances[^1] is not decimal reportedClosing)
+        {
+            return StatementReconciliation.Unavailable(
+                transactions,
+                sourceType == "credit_card"
+                    ? "Credit-card statement totals require issuer cycle metadata and are shown for review only."
+                    : "The statement does not expose a usable running-balance column.");
+        }
+
+        var first = transactions[0];
+        var openingBalance = firstClosing
+            + (first.Direction == "debit" ? first.Amount : -first.Amount);
+        var totalDebits = transactions
+            .Where(item => item.Direction == "debit")
+            .Sum(item => item.Amount);
+        var totalCredits = transactions
+            .Where(item => item.Direction == "credit")
+            .Sum(item => item.Amount);
+        var calculatedClosing = decimal.Round(openingBalance + totalCredits - totalDebits, 2);
+        var variance = decimal.Round(reportedClosing - calculatedClosing, 2);
+        var matches = Math.Abs(variance) <= 0.01m;
+
+        return new StatementReconciliation(
+            totalDebits,
+            totalCredits,
+            decimal.Round(openingBalance, 2),
+            decimal.Round(reportedClosing, 2),
+            calculatedClosing,
+            variance,
+            matches ? "matched" : "mismatch",
+            matches
+                ? "Opening balance plus credits minus debits matches the reported closing balance."
+                : "The parsed rows do not reconcile with the reported closing balance. Review missing or misread rows before import.");
+    }
+
 
     private static int FindHeader(IReadOnlyList<string> headers, IEnumerable<string> aliases)
     {

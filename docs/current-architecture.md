@@ -55,7 +55,7 @@ sequenceDiagram
     UI->>ST: Remove replaced/deleted object
 ```
 
-### Planned statement import
+### Statement import
 
 ```mermaid
 sequenceDiagram
@@ -79,14 +79,14 @@ sequenceDiagram
 | Automatic bank sync | Blocked by FIU/AA onboarding | Keep disabled; add a provider adapter contract only |
 | Automatic card sync | Blocked by provider/issuer coverage | Keep disabled; support card statements |
 | Direct UPI history | No generic consumer API | Detect UPI from bank/card narration and references |
-| CSV import | Schema only | Implement preview and atomic commit |
-| PDF import | Not implemented | Implement text-PDF extraction with review-required parsing |
+| CSV import | Generic import implemented | Add initial SBI, HDFC and ICICI header profiles plus fixtures |
+| PDF import | Text-PDF import implemented | Add local scanned-PDF OCR with mandatory review |
 | Raw ingestion integrity | Client policies are too broad | Make raw/canonical ingestion service-owned through a guarded RPC |
 | Deduplication | Schema supports fingerprints | Enforce deterministic fingerprints and import idempotency |
-| User review | No import preview | Add a preview table with validation errors |
+| User review | Preview and correction implemented | Add reconciliation totals and explicit variance confirmation |
 | Background sync | No provider | Defer until provider onboarding |
 | Provider credentials/webhooks | No provider | Define adapter boundary; do not add fake credentials or webhooks |
 
 ## Delivery slice
 
-This phase implements user-initiated CSV and text-based PDF statement imports, preview, validation, UPI rail detection, deterministic deduplication, immutable raw records, canonical transaction writes and RLS tests. Scanned/image PDFs remain unsupported until an isolated OCR pipeline is selected. Automatic sync remains unavailable until a regulated provider relationship exists.
+This phase implements user-initiated CSV and PDF statement imports, institution header profiles, local OCR, preview, reconciliation, validation, UPI rail detection, deterministic deduplication, immutable raw records, canonical transaction writes, optional time-limited original retention and RLS tests. Automatic sync remains unavailable until a regulated provider relationship exists.
