@@ -1,48 +1,103 @@
-<div class="auth-wrapper animate-fade-in">
-  <div class="glass-panel auth-panel">
-    <div class="auth-header">
-      <div class="logo">FinanceHub</div>
-      <h2>Welcome Back</h2>
-      <p>Log in to track your family's finances.</p>
-    </div>
+<div class="auth-page animate-fade-in">
+  <aside class="auth-story" aria-label="FinanceHub overview">
+    <a routerLink="/login" class="auth-brand" aria-label="FinanceHub">
+      <span class="auth-brand-mark" aria-hidden="true">F</span>
+      <span class="auth-brand-copy"><strong>FinanceHub</strong><small>Family finance</small></span>
+    </a>
 
-    <div class="alert-success" *ngIf="confirmationMessage">
-      {{ confirmationMessage }}
-    </div>
+    <div class="story-content">
+      <span class="story-kicker">Your household, in sync</span>
+      <h2>One clear view of the money your family shares.</h2>
+      <p>Track everyday spending, budgets, savings goals and recurring commitments in a workspace designed for Indian households.</p>
 
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-      <div class="form-group">
-        <label class="form-label">Email Address</label>
-        <input type="email" class="form-control" formControlName="email" placeholder="you@example.com">
-        <div class="text-danger" *ngIf="loginForm.get('email')?.touched && loginForm.get('email')?.invalid">
-          Valid email is required.
+      <div class="product-preview" aria-hidden="true">
+        <div class="preview-window">
+          <div class="preview-header">
+            <div class="preview-title"><span>F</span> Family overview</div>
+            <div class="preview-live">Synced</div>
+          </div>
+          <div class="preview-balance-row">
+            <div class="preview-balance"><small>Spent this month</small><strong>₹42,680</strong></div>
+            <span class="preview-trend">8% under plan</span>
+          </div>
+          <div class="preview-metrics">
+            <div class="preview-metric">
+              <small>Monthly budget</small><strong>₹62,500</strong>
+              <div class="preview-progress"><span></span></div>
+            </div>
+            <div class="preview-metric"><small>Upcoming EMI</small><strong>₹8,450 · 12 Nov</strong></div>
+          </div>
+          <div class="preview-activity">
+            <div class="preview-avatar-stack">
+              <span class="preview-avatar">SP</span><span class="preview-avatar">AP</span><span class="preview-avatar">RP</span>
+            </div>
+            <p><strong>3 family members</strong> keeping the ledger current</p>
+          </div>
         </div>
       </div>
-
-      <div class="form-group">
-        <label class="form-label">Password</label>
-        <input type="password" class="form-control" formControlName="password" placeholder="••••••••">
-        <div class="text-danger" *ngIf="loginForm.get('password')?.touched && loginForm.get('password')?.invalid">
-          Password is required.
-        </div>
-      </div>
-
-      <div class="form-options">
-        <a routerLink="/forgot-password" class="forgot-link">Forgot password?</a>
-      </div>
-
-      <div class="alert-error" *ngIf="errorMessage">
-        {{ errorMessage }}
-      </div>
-
-      <button type="submit" class="btn btn-primary btn-block" [disabled]="loginForm.invalid || isLoading">
-        <span *ngIf="!isLoading">Log In</span>
-        <span *ngIf="isLoading" class="spinner"></span>
-      </button>
-    </form>
-
-    <div class="auth-footer">
-      Don't have an account? <a routerLink="/register">Sign up</a>
     </div>
-  </div>
+
+    <div class="story-footnote">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>
+      Secure family finance, with privacy controls built in.
+    </div>
+  </aside>
+  <main class="auth-main">
+    <section class="auth-card" aria-labelledby="login-title">
+      <a routerLink="/login" class="auth-brand mobile-auth-brand" aria-label="FinanceHub">
+        <span class="auth-brand-mark" aria-hidden="true">F</span>
+        <span class="auth-brand-copy"><strong>FinanceHub</strong><small>Family finance</small></span>
+      </a>
+      <header class="auth-form-header">
+        <span class="auth-eyebrow">Welcome back</span>
+        <h1 id="login-title">Welcome Back</h1>
+        <p>Sign in to continue to your family finance workspace.</p>
+      </header>
+
+      <div class="alert-success auth-status" *ngIf="confirmationMessage" role="status">
+        {{ confirmationMessage }}
+      </div>
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <label class="form-label" for="login-email">Email address</label>
+          <input id="login-email" type="email" class="form-control" formControlName="email"
+            placeholder="you@example.com" autocomplete="email">
+          <div class="text-danger" *ngIf="loginForm.get('email')?.touched && loginForm.get('email')?.invalid">
+            Enter a valid email address.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="login-password">Password</label>
+          <input id="login-password" type="password" class="form-control" formControlName="password"
+            placeholder="Enter your password" autocomplete="current-password">
+          <div class="text-danger" *ngIf="loginForm.get('password')?.touched && loginForm.get('password')?.invalid">
+            Password is required.
+          </div>
+        </div>
+
+        <div class="form-options">
+          <a routerLink="/forgot-password" class="forgot-link">Forgot password?</a>
+        </div>
+
+        <div class="alert-error auth-status" *ngIf="errorMessage" role="alert">
+          {{ errorMessage }}
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" [disabled]="loginForm.invalid || isLoading">
+          <span *ngIf="!isLoading">Log In</span>
+          <span *ngIf="isLoading" class="spinner"></span>
+        </button>
+        <div class="auth-security-note">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>
+          Your credentials are encrypted in transit.
+        </div>
+      </form>
+
+      <div class="auth-footer">
+        New to FinanceHub? <a routerLink="/register">Create an account</a>
+      </div>
+    </section>
+  </main>
 </div>

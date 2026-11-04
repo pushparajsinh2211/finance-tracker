@@ -1,49 +1,105 @@
-<div class="auth-wrapper animate-fade-in">
-    <div class="glass-panel auth-panel">
-        <div class="auth-header">
-            <div class="logo">FinanceHub</div>
-            <h2>Create Account</h2>
-            <p>Join to collaborate on family spending.</p>
+<div class="auth-page animate-fade-in">
+  <aside class="auth-story" aria-label="FinanceHub overview">
+    <a routerLink="/login" class="auth-brand" aria-label="FinanceHub">
+      <span class="auth-brand-mark" aria-hidden="true">F</span>
+      <span class="auth-brand-copy"><strong>FinanceHub</strong><small>Family finance</small></span>
+    </a>
+
+    <div class="story-content">
+      <span class="story-kicker">Start together</span>
+      <h2>Build better money habits as a family.</h2>
+      <p>Create your private household workspace, invite family members and turn scattered expenses into one reliable financial picture.</p>
+
+      <div class="product-preview" aria-hidden="true">
+        <div class="preview-window">
+          <div class="preview-header">
+            <div class="preview-title"><span>F</span> Family overview</div>
+            <div class="preview-live">Synced</div>
+          </div>
+          <div class="preview-balance-row">
+            <div class="preview-balance"><small>Spent this month</small><strong>₹42,680</strong></div>
+            <span class="preview-trend">8% under plan</span>
+          </div>
+          <div class="preview-metrics">
+            <div class="preview-metric">
+              <small>Monthly budget</small><strong>₹62,500</strong>
+              <div class="preview-progress"><span></span></div>
+            </div>
+            <div class="preview-metric"><small>Upcoming EMI</small><strong>₹8,450 · 12 Nov</strong></div>
+          </div>
+          <div class="preview-activity">
+            <div class="preview-avatar-stack">
+              <span class="preview-avatar">SP</span><span class="preview-avatar">AP</span><span class="preview-avatar">RP</span>
+            </div>
+            <p><strong>3 family members</strong> keeping the ledger current</p>
+          </div>
         </div>
-
-        <form *ngIf="!pendingEmail" [formGroup]="registerForm" (ngSubmit)="onSubmit()">
-            <div class="form-group">
-                <label class="form-label">Email Address</label>
-                <input type="email" class="form-control" formControlName="email" placeholder="you@example.com">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Password</label>
-                <input type="password" class="form-control" formControlName="password"
-                    placeholder="At least 6 characters">
-            </div>
-
-            <div class="alert-error" *ngIf="errorMessage">
-                {{ errorMessage }}
-            </div>
-
-            <button type="submit" class="btn btn-primary btn-block" [disabled]="registerForm.invalid || isLoading">
-                <span *ngIf="!isLoading">Sign Up</span>
-                <span *ngIf="isLoading" class="spinner"></span>
-            </button>
-        </form>
-
-        <div *ngIf="pendingEmail">
-            <div class="alert-success">{{ successMessage }}</div>
-            <p style="color: var(--text-muted); margin-top: 1rem;">
-                We sent the link to <strong>{{ pendingEmail }}</strong>. Check spam or promotions if it is not in your inbox.
-            </p>
-            <button type="button" class="btn btn-secondary btn-block" (click)="resendConfirmation()"
-                [disabled]="isResending">
-                {{ isResending ? 'Sending…' : 'Resend confirmation email' }}
-            </button>
-            <div class="alert-error" *ngIf="errorMessage" style="margin-top: 1rem;">
-                {{ errorMessage }}
-            </div>
-        </div>
-
-        <div class="auth-footer">
-            Already confirmed? <a routerLink="/login">Log in</a>
-        </div>
+      </div>
     </div>
+
+    <div class="story-footnote">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>
+      Secure family finance, with privacy controls built in.
+    </div>
+  </aside>
+  <main class="auth-main">
+    <section class="auth-card" aria-labelledby="register-title">
+      <a routerLink="/login" class="auth-brand mobile-auth-brand" aria-label="FinanceHub">
+        <span class="auth-brand-mark" aria-hidden="true">F</span>
+        <span class="auth-brand-copy"><strong>FinanceHub</strong><small>Family finance</small></span>
+      </a>
+      <header class="auth-form-header">
+        <span class="auth-eyebrow">Create your workspace</span>
+        <h1 id="register-title">Create Account</h1>
+        <p>Start your family ledger with a secure FinanceHub account.</p>
+      </header>
+
+      <form *ngIf="!pendingEmail" [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <label class="form-label" for="register-email">Email address</label>
+          <input id="register-email" type="email" class="form-control" formControlName="email"
+            placeholder="you@example.com" autocomplete="email">
+          <div class="text-danger" *ngIf="registerForm.get('email')?.touched && registerForm.get('email')?.invalid">
+            Enter a valid email address.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="register-password">Password</label>
+          <input id="register-password" type="password" class="form-control" formControlName="password"
+            placeholder="At least 6 characters" autocomplete="new-password">
+          <div class="text-danger" *ngIf="registerForm.get('password')?.touched && registerForm.get('password')?.invalid">
+            Use at least 6 characters.
+          </div>
+        </div>
+
+        <div class="alert-error auth-status" *ngIf="errorMessage" role="alert">{{ errorMessage }}</div>
+
+        <button type="submit" class="btn btn-primary btn-block" [disabled]="registerForm.invalid || isLoading">
+          <span *ngIf="!isLoading">Sign Up</span>
+          <span *ngIf="isLoading" class="spinner"></span>
+        </button>
+        <div class="auth-security-note">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>
+          Your credentials are encrypted in transit.
+        </div>
+      </form>
+
+      <div *ngIf="pendingEmail" class="confirmation-state" role="status">
+        <div class="alert-success auth-status">
+          <span class="auth-status-title">Check your inbox</span>
+          <p class="auth-status-copy">{{ successMessage }}</p>
+        </div>
+        <p>We sent the confirmation link to <strong>{{ pendingEmail }}</strong>. Check spam or promotions if it is not in your inbox.</p>
+        <button type="button" class="btn btn-secondary btn-block" (click)="resendConfirmation()" [disabled]="isResending">
+          {{ isResending ? 'Sending…' : 'Resend confirmation email' }}
+        </button>
+        <div class="alert-error auth-status" *ngIf="errorMessage" role="alert">{{ errorMessage }}</div>
+      </div>
+
+      <div class="auth-footer">
+        Already confirmed? <a routerLink="/login">Log in</a>
+      </div>
+    </section>
+  </main>
 </div>
