@@ -1,0 +1,67 @@
+name: Production smoke verification
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-smoke
+  cancel-in-progress: true
+
+env:
+  FRONTEND_URL: https://finance-tracker-sigma-flax-17.vercel.app
+  API_URL: https://finance-tracker-178o.onrender.com
+
+jobs:
+  smoke:
+    name: Verify deployed frontend and API
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'master')
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+
+    steps:
+      - name: Verify public production surfaces
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          probe() {
+            local label="$1"
+            local url="$2"
+            local output="$3"
+
+            for attempt in {1..12}; do
+              if curl                 --fail                 --silent                 --show-error                 --location                 --connect-timeout 10                 --max-time 30                 "$url"                 --output "$output"; then
+                echo "$label responded successfully on attempt $attempt."
+                return 0
+              fi
+
+              echo "$label is not ready yet (attempt $attempt/12)."
+              sleep 15
+            done
+
+            echo "::error::$label did not become healthy."
+            return 1
+          }
+
+          probe "Frontend" "$FRONTEND_URL/" "$RUNNER_TEMP/frontend.html"
+          grep --quiet '<app-root' "$RUNNER_TEMP/frontend.html" ||
+            { echo "::error::Frontend response is not the Angular application shell."; exit 1; }
+
+          probe "API liveness" "$API_URL/health/live" "$RUNNER_TEMP/live.json"
+          jq --exit-status '.status == "healthy"' "$RUNNER_TEMP/live.json" >/dev/null ||
+            { echo "::error::API liveness response is not healthy."; exit 1; }
+
+          probe "API readiness" "$API_URL/health/ready" "$RUNNER_TEMP/ready.json"
+          jq --exit-status             '.status == "healthy" and any(.checks[]; .name == "supabase-auth" and .status == "healthy")'             "$RUNNER_TEMP/ready.json" >/dev/null ||
+            { echo "::error::API readiness or Supabase Auth dependency is unhealthy."; exit 1; }
+
+          echo "Production frontend, API, and Supabase Auth readiness checks passed."
