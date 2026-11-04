@@ -11,22 +11,31 @@ public sealed partial class StatementParser : IStatementParser
 {
     public const long MaximumFileBytes = 10 * 1024 * 1024;
     public const int MaximumTransactions = 5000;
-    private const string ParserVersion = "1.0.0";
+    private const string ParserVersion = "2.0.0";
+
+    private readonly IStatementOcrService _ocrService;
+
+    public StatementParser(IStatementOcrService ocrService)
+    {
+        _ocrService = ocrService;
+    }
 
     private static readonly string[] DateAliases =
         ["date", "transactiondate", "txndate", "valuedate", "postingdate"];
     private static readonly string[] NarrationAliases =
-        ["narration", "description", "particulars", "transactiondetails", "remarks", "details"];
+        ["narration", "description", "particulars", "transactiondetails", "transactionremarks", "transactiondescription", "remarks", "details"];
     private static readonly string[] DebitAliases =
-        ["debit", "debitamount", "withdrawal", "withdrawalamount", "dr"];
+        ["debit", "debitamount", "withdrawal", "withdrawalamount", "withdrawalamt", "withdrawalamountinr", "dr"];
     private static readonly string[] CreditAliases =
-        ["credit", "creditamount", "deposit", "depositamount", "cr"];
+        ["credit", "creditamount", "deposit", "depositamount", "depositamt", "depositamountinr", "cr"];
     private static readonly string[] AmountAliases =
-        ["amount", "transactionamount", "txnamount"];
+        ["amount", "transactionamount", "txnamount", "amountinrs", "amountinr"];
     private static readonly string[] DirectionAliases =
         ["type", "transactiontype", "drcr", "debitcredit", "direction"];
     private static readonly string[] ReferenceAliases =
-        ["reference", "referenceno", "refno", "transactionid", "txnid", "utr", "rrn", "chequeno"];
+        ["reference", "referenceno", "refno", "transactionid", "txnid", "utr", "rrn", "chequeno", "chqrefno", "refnochequeno"];
+    private static readonly string[] BalanceAliases =
+        ["balance", "closingbalance", "closingbalanceinr", "balanceinr"];
 
     private static readonly string[] DateFormats =
     [
@@ -55,7 +64,7 @@ public sealed partial class StatementParser : IStatementParser
         return extension switch
         {
             ".csv" => ParseCsv(bytes, sourceType, checksum),
-            ".pdf" => ParsePdf(bytes, sourceType, checksum, password),
+            ".pdf" => await ParsePdfAsync(bytes, sourceType, checksum, password, cancellationToken),
             _ => throw new InvalidOperationException("Only CSV and PDF statements are supported.")
         };
     }
@@ -68,7 +77,12 @@ public sealed partial class StatementParser : IStatementParser
         if (rows.Count < 2)
             throw new InvalidOperationException("The CSV must contain a header and at least one transaction.");
 
-        var headers = rows[0].Select(NormalizeHeader).ToArray();
+        var headerRowIndex = FindHeaderRow(rows);
+        if (headerRowIndex < 0)
+            throw new InvalidOperationException("A supported transaction header row was not found in the first 20 CSV rows.");
+
+        var headers = rows[headerRowIndex].Select(NormalizeHeader).ToArray();
+        var profile = StatementProfileDetector.Detect(headers, sourceType);
         var dateIndex = FindHeader(headers, DateAliases);
         var narrationIndex = FindHeader(headers, NarrationAliases);
         var debitIndex = FindHeader(headers, DebitAliases);
@@ -76,16 +90,13 @@ public sealed partial class StatementParser : IStatementParser
         var amountIndex = FindHeader(headers, AmountAliases);
         var directionIndex = FindHeader(headers, DirectionAliases);
         var referenceIndex = FindHeader(headers, ReferenceAliases);
-
-        if (dateIndex < 0 || narrationIndex < 0)
-            throw new InvalidOperationException("CSV headers must include date and narration/description columns.");
-        if (debitIndex < 0 && creditIndex < 0 && amountIndex < 0)
-            throw new InvalidOperationException("CSV headers must include debit/credit columns or an amount column.");
+        var balanceIndex = FindHeader(headers, BalanceAliases);
 
         var transactions = new List<StatementTransaction>();
+        var closingBalances = new List<decimal?>();
         var errors = new List<string>();
 
-        for (var rowNumber = 1; rowNumber < rows.Count; rowNumber++)
+        for (var rowNumber = headerRowIndex + 1; rowNumber < rows.Count; rowNumber++)
         {
             var row = rows[rowNumber];
             if (row.All(string.IsNullOrWhiteSpace))
@@ -104,6 +115,7 @@ public sealed partial class StatementParser : IStatementParser
                     amountIndex,
                     directionIndex,
                     referenceIndex));
+                closingBalances.Add(ParseOptionalAmount(GetCell(row, balanceIndex)));
             }
             catch (InvalidOperationException ex)
             {
@@ -117,13 +129,15 @@ public sealed partial class StatementParser : IStatementParser
         if (transactions.Count == 0)
             throw new InvalidOperationException("No valid transactions were found in the CSV.");
 
+        var indexedTransactions = AddOccurrenceIndexes(transactions);
         return new StatementParseResult(
-            "generic-csv",
+            profile.Id,
             ParserVersion,
             "csv",
             checksum,
-            AddOccurrenceIndexes(transactions),
-            errors.Take(100).ToArray());
+            indexedTransactions,
+            errors.Take(100).ToArray(),
+            BuildReconciliation(indexedTransactions, closingBalances));
     }
 
     private static StatementTransaction ParseCsvTransaction(
