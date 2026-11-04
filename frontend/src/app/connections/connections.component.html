@@ -54,7 +54,7 @@
     <div>
       <p class="eyebrow">Preview before commit</p>
       <h2 id="import-title">Import a statement</h2>
-      <p class="help">Generic CSV and text-based PDF files up to 10 MB are accepted. Scanned-image PDFs need OCR and are not supported yet.</p>
+      <p class="help">CSV, text PDF, and scanned PDF files up to 10 MB are accepted. Scans are processed locally with OCR and always require review.</p>
     </div>
 
     <div class="form-grid">
@@ -83,6 +83,19 @@
         <small>Sent over HTTPS for in-memory parsing; never persisted.</small>
       </label>
 
+      <label class="retention-control">
+        Original statement
+        <span class="check-line">
+          <input type="checkbox" [(ngModel)]="retainOriginal">
+          Retain a private copy temporarily
+        </span>
+        <select *ngIf="retainOriginal" [(ngModel)]="retentionDays">
+          <option [ngValue]="30">Delete after 30 days</option>
+          <option [ngValue]="90">Delete after 90 days</option>
+        </select>
+        <small>Off by default. Retained files are private and can be deleted immediately after import.</small>
+      </label>
+
       <label class="file-field">
         Statement file
         <input type="file" accept=".csv,text/csv,application/pdf" (change)="fileSelected($event)">
@@ -100,7 +113,29 @@
         <strong>{{ preview.transactionCount }} transactions found</strong>
         <span>{{ preview.reviewCount }} need review</span>
         <span>Parser: {{ preview.parser }} {{ preview.parserVersion }}</span>
+        <span *ngIf="preview.usedOcr" class="ocr-badge">OCR · verify every row</span>
       </div>
+
+      <section class="reconciliation" [class.mismatch]="preview.reconciliation.status === 'mismatch'"
+        [class.matched]="preview.reconciliation.status === 'matched'">
+        <div>
+          <span>Debits</span>
+          <strong>{{ preview.reconciliation.totalDebits | currency:'INR':'symbol':'1.2-2' }}</strong>
+        </div>
+        <div>
+          <span>Credits</span>
+          <strong>{{ preview.reconciliation.totalCredits | currency:'INR':'symbol':'1.2-2' }}</strong>
+        </div>
+        <div *ngIf="preview.reconciliation.closingBalance !== undefined">
+          <span>Reported closing</span>
+          <strong>{{ preview.reconciliation.closingBalance | currency:'INR':'symbol':'1.2-2' }}</strong>
+        </div>
+        <div *ngIf="preview.reconciliation.variance !== undefined">
+          <span>Variance</span>
+          <strong>{{ preview.reconciliation.variance | currency:'INR':'symbol':'1.2-2' }}</strong>
+        </div>
+        <p>{{ preview.reconciliation.message }}</p>
+      </section>
 
       <ul *ngIf="preview.errors.length" class="warnings">
         <li *ngFor="let item of preview.errors">{{ item }}</li>
@@ -125,7 +160,14 @@
         Showing the first {{ preview.transactions.length }} rows.
       </p>
 
-      <button class="btn btn-primary" type="button" [disabled]="committing" (click)="commitStatement()">
+      <label *ngIf="preview.reconciliation.status === 'mismatch'" class="mismatch-confirmation">
+        <input type="checkbox" [(ngModel)]="confirmReconciliationMismatch">
+        I reviewed the variance and still want to import these rows.
+      </label>
+
+      <button class="btn btn-primary" type="button"
+        [disabled]="committing || (preview.reconciliation.status === 'mismatch' && !confirmReconciliationMismatch)"
+        (click)="commitStatement()">
         {{ committing ? 'Importing…' : 'Confirm import' }}
       </button>
     </div>
@@ -135,6 +177,18 @@
       {{ importResult.importedCount }} added, {{ importResult.duplicateCount }} duplicates skipped,
       {{ importResult.reviewCount }} flagged for review.
       <a routerLink="/transactions">Review imported transactions</a>
+      <div class="retention-result" *ngIf="importResult.retention.retained">
+        <span>
+          Original retained privately until {{ importResult.retention.deleteAfter | date:'mediumDate' }}.
+        </span>
+        <button class="btn btn-secondary" type="button"
+          [disabled]="deletingRetainedFile" (click)="deleteRetainedStatement()">
+          {{ deletingRetainedFile ? 'Deleting…' : 'Delete original now' }}
+        </button>
+      </div>
+      <p class="help" *ngIf="!importResult.retention.retained">
+        {{ importResult.retention.message }}
+      </p>
     </div>
   </section>
 </section>
