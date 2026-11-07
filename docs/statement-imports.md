@@ -39,7 +39,9 @@ For bank CSVs with running balances, preview calculates:
 
 `opening balance + credits - debits = calculated closing balance`
 
-It compares the calculated closing balance with the final reported balance. A variance up to ₹0.01 is considered matched. A mismatch is displayed prominently and requires explicit confirmation before commit. Credit-card and generic PDF reconciliation remains unavailable unless issuer cycle totals can be read reliably; debit and credit totals are still shown.
+It compares the calculated closing balance with the final reported balance. A variance up to ₹0.01 is considered matched. A mismatch is displayed prominently and requires explicit confirmation before commit.
+
+For HDFC, ICICI and compatible credit-card exports, the parser now reads issuer cycle metadata such as previous balance, purchases/debits, payments/credits and total amount due. Parsed rows are compared with every available issuer total using the card equation `previous balance + purchases - payments = amount due`. Missing fees, reversals, payments or OCR rows therefore produce a visible mismatch that requires explicit confirmation. Card files without readable cycle metadata remain `unavailable` rather than being reported as matched.
 
 ## Original statement retention
 
