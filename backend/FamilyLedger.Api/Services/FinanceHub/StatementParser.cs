@@ -258,8 +258,14 @@ public sealed partial class StatementParser : IStatementParser
         if (transactions.Count == 0)
         {
             var mapped = GenericPdfTableMapper.Map(
-                lines.Concat(positionedLines),
+                positionedLines.Count > 0 ? positionedLines : lines,
                 sourceType);
+            if (mapped.Transactions.Count == 0 &&
+                positionedLines.Count > 0)
+            {
+                mapped = GenericPdfTableMapper.Map(lines, sourceType);
+            }
+
             if (mapped.Transactions.Count > 0)
             {
                 transactions = mapped.Transactions.ToList();
