@@ -188,6 +188,11 @@ export class ConnectionsComponent implements OnInit {
       return;
     }
 
+    if (this.preview.transactionCount === 0) {
+      this.importError = 'No valid transaction rows are available to import.';
+      return;
+    }
+
     this.committing = true;
     this.importError = '';
 

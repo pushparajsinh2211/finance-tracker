@@ -108,7 +108,7 @@
 
     <p *ngIf="importError" class="state error" role="alert">{{ importError }}</p>
 
-    <div *ngIf="preview" class="preview">
+    <div *ngIf="preview && preview.transactionCount > 0" class="preview">
       <div class="summary">
         <strong>{{ preview.transactionCount }} transactions found</strong>
         <span>{{ preview.reviewCount }} need review</span>
@@ -126,11 +126,11 @@
           <span>Credits</span>
           <strong>{{ preview.reconciliation.totalCredits | currency:'INR':'symbol':'1.2-2' }}</strong>
         </div>
-        <div *ngIf="preview.reconciliation.closingBalance !== undefined">
+        <div *ngIf="preview.reconciliation.closingBalance != null">
           <span>Reported closing</span>
           <strong>{{ preview.reconciliation.closingBalance | currency:'INR':'symbol':'1.2-2' }}</strong>
         </div>
-        <div *ngIf="preview.reconciliation.variance !== undefined">
+        <div *ngIf="preview.reconciliation.variance != null">
           <span>Variance</span>
           <strong>{{ preview.reconciliation.variance | currency:'INR':'symbol':'1.2-2' }}</strong>
         </div>
@@ -166,10 +166,15 @@
       </label>
 
       <button class="btn btn-primary" type="button"
-        [disabled]="committing || (preview.reconciliation.status === 'mismatch' && !confirmReconciliationMismatch)"
+        [disabled]="committing || preview.transactionCount === 0 || (preview.reconciliation.status === 'mismatch' && !confirmReconciliationMismatch)"
         (click)="commitStatement()">
         {{ committing ? 'Importing…' : 'Confirm import' }}
       </button>
+    </div>
+
+    <div *ngIf="preview && preview.transactionCount === 0" class="empty-preview state error" role="alert">
+      <strong>No transactions can be imported from this file.</strong>
+      <span>Download a CSV export from the institution or use a supported statement layout.</span>
     </div>
 
     <div *ngIf="importResult" class="success" role="status">

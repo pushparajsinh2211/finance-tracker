@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.DocumentLayoutAnalysis.TextExtractor;
+using UglyToad.PdfPig.DocumentLayoutAnalysis.WordExtractor;
 
 namespace FamilyLedger.Api.Services.FinanceHub;
 
@@ -222,16 +223,55 @@ public sealed partial class StatementParser : IStatementParser
             throw new InvalidOperationException("PDF statements can contain at most 100 pages.");
 
         var lines = new List<string>();
+        var positionedLines = new List<string>();
         foreach (var page in document.GetPages())
         {
             var text = ContentOrderTextExtractor.GetText(page);
             lines.AddRange(text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries));
+
+            var pageLines = page
+                .GetWords(NearestNeighbourWordExtractor.Instance)
+                .Where(word => !string.IsNullOrWhiteSpace(word.Text))
+                .GroupBy(word => Math.Round(word.BoundingBox.Bottom / 2.5) * 2.5)
+                .OrderByDescending(group => group.Key)
+                .Select(group => string.Join(
+                    " ",
+                    group
+                        .OrderBy(word => word.BoundingBox.Left)
+                        .Select(word => word.Text)));
+            positionedLines.AddRange(pageLines);
         }
 
         var transactions = ParsePdfLines(lines, sourceType);
+        var parserName = "generic-text-pdf";
         var usedOcr = false;
         var errors = new List<string>();
-        var extractedCharacterCount = lines.Sum(line => line.Count(character => !char.IsWhiteSpace(character)));
+        var reconciliation = StatementReconciliation.Unavailable(
+            transactions,
+            "Balance reconciliation is unavailable for this PDF layout.");
+
+        if (transactions.Count == 0)
+        {
+            var mapped = GenericPdfTableMapper.Map(
+                lines.Concat(positionedLines),
+                sourceType);
+            if (mapped.Transactions.Count > 0)
+            {
+                transactions = mapped.Transactions.ToList();
+                reconciliation = mapped.Reconciliation;
+                parserName = "generic-tabular-pdf";
+                errors.Add(
+                    "This PDF used conservative table mapping. Verify all review-flagged rows and reconciliation totals.");
+                if (mapped.SkippedCandidateRows > 0)
+                {
+                    errors.Add(
+                        $"{mapped.SkippedCandidateRows} candidate row(s) were skipped because their direction could not be verified.");
+                }
+            }
+        }
+
+        var extractedCharacterCount = lines.Sum(
+            line => line.Count(character => !char.IsWhiteSpace(character)));
 
         if (transactions.Count == 0 && extractedCharacterCount < 80)
         {
@@ -245,8 +285,25 @@ public sealed partial class StatementParser : IStatementParser
             transactions = ParsePdfLines(ocrLines, sourceType)
                 .Select(item => item with { NeedsReview = true })
                 .ToList();
+
+            if (transactions.Count == 0)
+            {
+                var mappedOcr = GenericPdfTableMapper.Map(ocrLines, sourceType);
+                transactions = mappedOcr.Transactions
+                    .Select(item => item with { NeedsReview = true })
+                    .ToList();
+                reconciliation = mappedOcr.Reconciliation;
+                if (mappedOcr.SkippedCandidateRows > 0)
+                {
+                    errors.Add(
+                        $"{mappedOcr.SkippedCandidateRows} OCR candidate row(s) were skipped because their direction could not be verified.");
+                }
+            }
+
             usedOcr = true;
-            errors.Add("This scanned PDF was read with OCR. Verify every recognized row before relying on it.");
+            parserName = "tesseract-ocr-pdf";
+            errors.Add(
+                "This scanned PDF was read with OCR. Verify every recognized row before relying on it.");
         }
 
         if (transactions.Count == 0)
@@ -254,20 +311,27 @@ public sealed partial class StatementParser : IStatementParser
             errors.Add(
                 extractedCharacterCount < 80
                     ? "OCR did not recognize transaction rows. Try a clearer scan or CSV export."
-                    : "No transaction rows could be recognized. This text layout needs a dedicated institution parser.");
+                    : "The PDF contains text, but its transaction columns could not be mapped safely. Use a bank CSV export or provide a synthetic layout fixture.");
         }
 
         var indexedTransactions = AddOccurrenceIndexes(transactions);
+        if (reconciliation.TotalDebits == 0 &&
+            reconciliation.TotalCredits == 0 &&
+            indexedTransactions.Count > 0)
+        {
+            reconciliation = StatementReconciliation.Unavailable(
+                indexedTransactions,
+                reconciliation.Message);
+        }
+
         return new StatementParseResult(
-            usedOcr ? "tesseract-ocr-pdf" : "generic-text-pdf",
+            parserName,
             ParserVersion,
             "pdf",
             checksum,
             indexedTransactions,
             errors,
-            StatementReconciliation.Unavailable(
-                indexedTransactions,
-                "Balance reconciliation is unavailable for this PDF layout."),
+            reconciliation,
             usedOcr);
     }
 

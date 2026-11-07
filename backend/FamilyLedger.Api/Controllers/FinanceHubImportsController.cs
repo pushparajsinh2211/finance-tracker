@@ -53,6 +53,18 @@ public sealed class FinanceHubImportsController : ControllerBase
                 request.Password,
                 cancellationToken);
 
+            if (parsed.Transactions.Count == 0)
+            {
+                return UnprocessableEntity(new
+                {
+                    Message = parsed.Errors.FirstOrDefault()
+                        ?? "No transaction rows could be recognized. Use a supported CSV export or a dedicated institution parser.",
+                    parsed.Parser,
+                    parsed.ParserVersion,
+                    parsed.UsedOcr
+                });
+            }
+
             return Ok(new StatementPreviewResponse(
                 parsed.Parser,
                 parsed.ParserVersion,
