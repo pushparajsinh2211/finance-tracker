@@ -126,9 +126,17 @@
           <span>Credits</span>
           <strong>{{ preview.reconciliation.totalCredits | currency:'INR':'symbol':'1.2-2' }}</strong>
         </div>
+        <div *ngIf="preview.reconciliation.openingBalance != null">
+          <span>{{ sourceType === 'card' ? 'Previous balance' : 'Opening balance' }}</span>
+          <strong>{{ preview.reconciliation.openingBalance | currency:'INR':'symbol':'1.2-2' }}</strong>
+        </div>
         <div *ngIf="preview.reconciliation.closingBalance != null">
-          <span>Reported closing</span>
+          <span>{{ sourceType === 'card' ? 'Issuer amount due' : 'Reported closing' }}</span>
           <strong>{{ preview.reconciliation.closingBalance | currency:'INR':'symbol':'1.2-2' }}</strong>
+        </div>
+        <div *ngIf="preview.reconciliation.calculatedClosingBalance != null">
+          <span>{{ sourceType === 'card' ? 'Calculated amount due' : 'Calculated closing' }}</span>
+          <strong>{{ preview.reconciliation.calculatedClosingBalance | currency:'INR':'symbol':'1.2-2' }}</strong>
         </div>
         <div *ngIf="preview.reconciliation.variance != null">
           <span>Variance</span>
