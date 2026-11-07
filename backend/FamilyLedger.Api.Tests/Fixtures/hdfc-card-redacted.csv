@@ -1,3 +1,7 @@
+Previous Balance,1000.00
+Purchases / Debits,1250.00
+Payments / Credits,250.00
+Total Amount Due,2000.00
 Date,Transaction Description,Amount (in Rs.),Transaction Type,Reference
 01/11/2026,ONLINE PURCHASE,1250.00,DR,CARD000000000001
 02/11/2026,PURCHASE REVERSAL,250.00,CR,CARD000000000002
