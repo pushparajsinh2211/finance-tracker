@@ -26,7 +26,7 @@ public sealed class StatementParserTests
         var result = await parser.ParseAsync(file, sourceType, null, default);
 
         Assert.Equal(expectedParser, result.Parser);
-        Assert.Equal("2.1.0", result.ParserVersion);
+        Assert.Equal("2.2.0", result.ParserVersion);
         Assert.Equal(2, result.Transactions.Count);
         Assert.Empty(result.Errors);
         Assert.Equal(expectedReconciliation, result.Reconciliation.Status);
@@ -158,6 +158,63 @@ public sealed class StatementParserTests
         Assert.Equal("generic-csv", profile.Id);
     }
 
+
+
+    [Fact]
+    public void GenericPdfMapperAssemblesMultiLineBankRows()
+    {
+        var result = GenericPdfTableMapper.Map(
+        [
+            "Opening Balance 10,000.00",
+            "01/11/2026",
+            "UPI SHOP UPI000000000001",
+            "500.00",
+            "9,500.00",
+            "02/11/2026",
+            "NEFT SALARY NEFT000000000002",
+            "1,000.00",
+            "10,500.00"
+        ],
+        "bank");
+
+        Assert.Equal(2, result.Transactions.Count);
+        Assert.Equal("debit", result.Transactions[0].Direction);
+        Assert.Equal(500m, result.Transactions[0].Amount);
+        Assert.Equal("credit", result.Transactions[1].Direction);
+        Assert.Equal(1_000m, result.Transactions[1].Amount);
+        Assert.Equal("matched", result.Reconciliation.Status);
+    }
+
+    [Fact]
+    public void GenericPdfMapperAppendsCardDirectionOnContinuationLine()
+    {
+        var result = GenericPdfTableMapper.Map(
+        [
+            "01/11/2026",
+            "PAYMENT RECEIVED",
+            "1,200.00",
+            "CR"
+        ],
+        "credit_card");
+
+        var transaction = Assert.Single(result.Transactions);
+        Assert.Equal("credit", transaction.Direction);
+        Assert.Equal(1_200m, transaction.Amount);
+        Assert.True(transaction.NeedsReview);
+    }
+
+    [Fact]
+    public void GenericPdfMapperPreservesLegitimateDuplicateCardRows()
+    {
+        var result = GenericPdfTableMapper.Map(
+        [
+            "01/11/2026 RESTAURANT 800.00 DR",
+            "01/11/2026 RESTAURANT 800.00 DR"
+        ],
+        "credit_card");
+
+        Assert.Equal(2, result.Transactions.Count);
+    }
 
     [Fact]
     public void GenericPdfMapperUsesRunningBalanceToMapBankRows()
