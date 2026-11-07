@@ -1,0 +1,30 @@
+<main class="confirmation-result-page">
+  <section class="confirmation-result-card" aria-live="polite">
+    <div class="confirmation-brand" aria-label="FinanceHub">
+      <span aria-hidden="true">F</span>
+      <strong>FinanceHub</strong>
+    </div>
+
+    <ng-container *ngIf="verified; else confirmationError">
+      <div class="confirmation-icon confirmation-icon-success" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="m6.5 12.5 3.4 3.4 7.6-8"/></svg>
+      </div>
+      <span class="confirmation-kicker">Verification complete</span>
+      <h1>Email verified</h1>
+      <p>Your FinanceHub account has been confirmed successfully.</p>
+      <p class="confirmation-hint">
+        Return to the original registration tab. It will continue to the login page automatically. You can close this tab.
+      </p>
+    </ng-container>
+
+    <ng-template #confirmationError>
+      <div class="confirmation-icon confirmation-icon-error" aria-hidden="true">!</div>
+      <span class="confirmation-kicker">Verification unsuccessful</span>
+      <h1>Email could not be verified</h1>
+      <p>{{ errorMessage }}</p>
+      <p class="confirmation-hint">
+        Return to the registration tab and request a new confirmation email.
+      </p>
+    </ng-template>
+  </section>
+</main>
