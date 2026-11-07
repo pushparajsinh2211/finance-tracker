@@ -76,12 +76,12 @@ public static class GenericPdfTableMapper
                     continue;
                 }
 
-                var direction = MarkerDirection(marker)
+                var cardDirection = MarkerDirection(marker)
                     ?? (signedAmount < 0 ? "credit" : "debit");
                 transactions.Add(CreateTransaction(
                     occurredAt,
                     Math.Abs(signedAmount),
-                    direction,
+                    cardDirection,
                     BuildNarration(body),
                     needsReview: true,
                     sourceType));
