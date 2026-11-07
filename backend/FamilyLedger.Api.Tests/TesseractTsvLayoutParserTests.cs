@@ -63,7 +63,7 @@ public sealed class TesseractTsvLayoutParserTests
             Word(2, 1, 10, 100, 100, 20, "PAGE-TWO"));
 
         Assert.Equal(
-            ["PAGE-ONE", "NEXT-ROW", "PAGE-TWO"],
+            new[] { "PAGE-ONE", "NEXT-ROW", "PAGE-TWO" },
             rows);
     }
 
@@ -76,7 +76,7 @@ public sealed class TesseractTsvLayoutParserTests
             "not-a-tsv-row\n" +
             Word(1, 1, 10, 40, 100, 20, "VALID"));
 
-        Assert.Equal(["VALID"], rows);
+        Assert.Equal(new[] { "VALID" }, rows);
     }
 
     private const string Header =
