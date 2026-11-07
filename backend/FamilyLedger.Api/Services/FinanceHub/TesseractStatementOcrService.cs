@@ -53,12 +53,14 @@ public sealed class TesseractStatementOcrService(
             var recognized = new StringBuilder();
             foreach (var pageFile in pageFiles)
             {
-                var text = await RunAsync(
+                var tsv = await RunAsync(
                     "tesseract",
-                    [pageFile, "stdout", "-l", "eng", "--psm", "6"],
+                    [pageFile, "stdout", "-l", "eng", "--psm", "6", "tsv"],
                     workingDirectory,
                     cancellationToken);
-                recognized.AppendLine(text);
+                var rows = TesseractTsvLayoutParser.ReconstructRows(tsv);
+                foreach (var row in rows)
+                    recognized.AppendLine(row);
             }
 
             return recognized.ToString();
