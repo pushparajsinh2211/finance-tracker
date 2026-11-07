@@ -30,7 +30,7 @@ export class EmailConfirmedComponent {
 
     this.verified = !!registrationId && !error;
     this.errorMessage = error
-      ? decodeURIComponent(error.replace(/\+/g, ' '))
+      ? error.replace(/\+/g, ' ')
       : registrationId
         ? ''
         : 'This confirmation link is incomplete or has expired.';
