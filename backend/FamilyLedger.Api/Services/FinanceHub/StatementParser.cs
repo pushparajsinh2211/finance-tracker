@@ -12,7 +12,7 @@ public sealed partial class StatementParser : IStatementParser
 {
     public const long MaximumFileBytes = 10 * 1024 * 1024;
     public const int MaximumTransactions = 5000;
-    private const string ParserVersion = "2.0.0";
+    private const string ParserVersion = "2.2.0";
 
     private readonly IStatementOcrService _ocrService;
 
@@ -138,7 +138,11 @@ public sealed partial class StatementParser : IStatementParser
             checksum,
             indexedTransactions,
             errors.Take(100).ToArray(),
-            BuildReconciliation(indexedTransactions, closingBalances, sourceType));
+            BuildReconciliation(
+                indexedTransactions,
+                closingBalances,
+                sourceType,
+                rows.Select(row => string.Join(" ", row))));
     }
 
     private static StatementTransaction ParseCsvTransaction(
@@ -242,6 +246,7 @@ public sealed partial class StatementParser : IStatementParser
             positionedLines.AddRange(pageLines);
         }
 
+        IEnumerable<string> reconciliationLines = lines.Concat(positionedLines).ToArray();
         var transactions = ParsePdfLines(lines, sourceType);
         var parserName = "generic-text-pdf";
         var usedOcr = false;
@@ -253,8 +258,14 @@ public sealed partial class StatementParser : IStatementParser
         if (transactions.Count == 0)
         {
             var mapped = GenericPdfTableMapper.Map(
-                lines.Concat(positionedLines),
+                positionedLines.Count > 0 ? positionedLines : lines,
                 sourceType);
+            if (mapped.Transactions.Count == 0 &&
+                positionedLines.Count > 0)
+            {
+                mapped = GenericPdfTableMapper.Map(lines, sourceType);
+            }
+
             if (mapped.Transactions.Count > 0)
             {
                 transactions = mapped.Transactions.ToList();
@@ -282,6 +293,7 @@ public sealed partial class StatementParser : IStatementParser
             var ocrLines = recognizedText.Split(
                 ['\r', '\n'],
                 StringSplitOptions.RemoveEmptyEntries);
+            reconciliationLines = ocrLines;
             transactions = ParsePdfLines(ocrLines, sourceType)
                 .Select(item => item with { NeedsReview = true })
                 .ToList();
@@ -315,6 +327,13 @@ public sealed partial class StatementParser : IStatementParser
         }
 
         var indexedTransactions = AddOccurrenceIndexes(transactions);
+        if (sourceType == "credit_card")
+        {
+            reconciliation = CardCycleReconciler.TryBuild(
+                reconciliationLines,
+                indexedTransactions) ?? reconciliation;
+        }
+
         if (reconciliation.TotalDebits == 0 &&
             reconciliation.TotalCredits == 0 &&
             indexedTransactions.Count > 0)
@@ -522,8 +541,17 @@ public sealed partial class StatementParser : IStatementParser
     private static StatementReconciliation BuildReconciliation(
         IReadOnlyList<StatementTransaction> transactions,
         IReadOnlyList<decimal?> closingBalances,
-        string sourceType)
+        string sourceType,
+        IEnumerable<string> statementLines)
     {
+        if (sourceType == "credit_card")
+        {
+            return CardCycleReconciler.TryBuild(statementLines, transactions)
+                ?? StatementReconciliation.Unavailable(
+                    transactions,
+                    "Credit-card reconciliation requires issuer cycle totals such as previous balance, purchases, payments or amount due.");
+        }
+
         if (sourceType != "bank" ||
             transactions.Count == 0 ||
             closingBalances.Count != transactions.Count ||
@@ -532,9 +560,7 @@ public sealed partial class StatementParser : IStatementParser
         {
             return StatementReconciliation.Unavailable(
                 transactions,
-                sourceType == "credit_card"
-                    ? "Credit-card statement totals require issuer cycle metadata and are shown for review only."
-                    : "The statement does not expose a usable running-balance column.");
+                "The statement does not expose a usable running-balance column.");
         }
 
         var first = transactions[0];

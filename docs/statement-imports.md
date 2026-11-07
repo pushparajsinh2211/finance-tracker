@@ -29,6 +29,8 @@ Text PDFs are parsed with PdfPig. If a PDF contains too little extractable text,
 - statement content is not sent to a third-party OCR API;
 - temporary PDFs and page images are removed after processing;
 - OCR rows are always marked as needing review;
+- date-led transaction fragments split across narration, amount, direction and balance lines are conservatively reassembled;
+- repeated identical transactions are preserved for occurrence-aware deduplication instead of being discarded during text extraction;
 - files remain limited to 10 MB and 100 PDF pages;
 - password-protected scanned PDFs are not passed to command-line tools, preventing password exposure through process arguments;
 - unclear scans may still need CSV export or a dedicated parser.
@@ -39,7 +41,9 @@ For bank CSVs with running balances, preview calculates:
 
 `opening balance + credits - debits = calculated closing balance`
 
-It compares the calculated closing balance with the final reported balance. A variance up to ₹0.01 is considered matched. A mismatch is displayed prominently and requires explicit confirmation before commit. Credit-card and generic PDF reconciliation remains unavailable unless issuer cycle totals can be read reliably; debit and credit totals are still shown.
+It compares the calculated closing balance with the final reported balance. A variance up to ₹0.01 is considered matched. A mismatch is displayed prominently and requires explicit confirmation before commit.
+
+For HDFC, ICICI and compatible credit-card exports, the parser now reads issuer cycle metadata such as previous balance, purchases/debits, payments/credits and total amount due. Parsed rows are compared with every available issuer total using the card equation `previous balance + purchases - payments = amount due`. Missing fees, reversals, payments or OCR rows therefore produce a visible mismatch that requires explicit confirmation. Card files without readable cycle metadata remain `unavailable` rather than being reported as matched.
 
 ## Original statement retention
 
