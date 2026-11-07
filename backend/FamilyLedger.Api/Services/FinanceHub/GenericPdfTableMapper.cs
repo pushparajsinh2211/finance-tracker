@@ -213,7 +213,7 @@ public static class GenericPdfTableMapper
 
             var amounts = AmountRegex.Matches(line);
             if (amounts.Count > 0 &&
-                TryParseAmount(amounts[^1].Groups["amount"].Value, out var balance))
+                TryParseAmount(amounts[amounts.Count - 1].Groups["amount"].Value, out var balance))
             {
                 return balance;
             }
