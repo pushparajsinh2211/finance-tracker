@@ -16,6 +16,12 @@ It falls back to the generic parser when a recognized date, narration, amount an
 
 A profile match does not certify a statement as authoritative. Users must review the preview and reconcile it against the source statement.
 
+## Generic PDF table fallback
+
+When a text PDF does not match the strict row parser, FinanceHub also reconstructs rows from positioned PDF words. The fallback supports common Indian bank and card patterns, including date-led rows, decimal debit/credit amounts, `DR`/`CR` markers, and running balances.
+
+For bank statements, direction is accepted only when it is explicit or the running-balance change verifies the amount. Ambiguous candidates are skipped and reported; mapped rows are marked for review. This improves compatibility with ICICI and other issuers without silently guessing transactions. It is still a best-effort importer, not production bank connectivity, and a bank CSV export remains the most reliable fallback for an unsupported layout.
+
 ## Scanned PDF OCR
 
 Text PDFs are parsed with PdfPig. If a PDF contains too little extractable text, the API renders at most the first 20 pages with Poppler and runs Tesseract locally inside the API container.
