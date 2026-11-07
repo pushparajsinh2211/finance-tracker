@@ -10,8 +10,8 @@ public sealed class StatementParserTests
     [InlineData("hdfc-bank-redacted.csv", "bank", "hdfc-bank-csv", "matched")]
     [InlineData("sbi-bank-redacted.csv", "bank", "sbi-bank-csv", "matched")]
     [InlineData("icici-bank-redacted.csv", "bank", "icici-bank-csv", "matched")]
-    [InlineData("hdfc-card-redacted.csv", "credit_card", "hdfc-card-csv", "unavailable")]
-    [InlineData("icici-card-redacted.csv", "credit_card", "icici-card-csv", "unavailable")]
+    [InlineData("hdfc-card-redacted.csv", "credit_card", "hdfc-card-csv", "matched")]
+    [InlineData("icici-card-redacted.csv", "credit_card", "icici-card-csv", "matched")]
     public async Task RedactedInstitutionFixtureUsesExpectedProfileAndReconciliation(
         string fixture,
         string sourceType,
@@ -26,7 +26,7 @@ public sealed class StatementParserTests
         var result = await parser.ParseAsync(file, sourceType, null, default);
 
         Assert.Equal(expectedParser, result.Parser);
-        Assert.Equal("2.0.0", result.ParserVersion);
+        Assert.Equal("2.1.0", result.ParserVersion);
         Assert.Equal(2, result.Transactions.Count);
         Assert.Empty(result.Errors);
         Assert.Equal(expectedReconciliation, result.Reconciliation.Status);
@@ -49,6 +49,103 @@ public sealed class StatementParserTests
         Assert.Equal("mismatch", result.Reconciliation.Status);
         Assert.Equal(49m, result.Reconciliation.Variance);
         Assert.Contains("do not reconcile", result.Reconciliation.Message);
+    }
+
+
+    [Fact]
+    public async Task CardCycleVarianceIsReportedWhenIssuerTotalsDoNotMatchRows()
+    {
+        const string csv =
+            "Previous Balance,1000.00\n" +
+            "Purchases / Debits,1400.00\n" +
+            "Payments / Credits,250.00\n" +
+            "Total Amount Due,2150.00\n" +
+            "Date,Transaction Description,Amount (in Rs.),Transaction Type,Reference\n" +
+            "01/11/2026,ONLINE PURCHASE,1250.00,DR,CARD000000000001\n" +
+            "02/11/2026,PURCHASE REVERSAL,250.00,CR,CARD000000000002\n";
+        await using var stream = new MemoryStream(
+            System.Text.Encoding.UTF8.GetBytes(csv));
+        var file = new FormFile(
+            stream,
+            0,
+            stream.Length,
+            "file",
+            "card-cycle-variance.csv");
+        var parser = new StatementParser(new RejectingOcrService());
+
+        var result = await parser.ParseAsync(
+            file,
+            "credit_card",
+            null,
+            default);
+
+        Assert.Equal("mismatch", result.Reconciliation.Status);
+        Assert.Equal(150m, result.Reconciliation.Variance);
+        Assert.Contains(
+            "purchases/debits differ",
+            result.Reconciliation.Message);
+    }
+
+    [Fact]
+    public void CardCycleReconcilerSupportsPdfStyleSummaryLines()
+    {
+        var transactions = new[]
+        {
+            new StatementTransaction(
+                DateTimeOffset.Parse("2026-11-01T00:00:00+05:30"),
+                800m,
+                "debit",
+                "RESTAURANT",
+                null,
+                "CARD",
+                "purchase",
+                true),
+            new StatementTransaction(
+                DateTimeOffset.Parse("2026-11-03T00:00:00+05:30"),
+                50m,
+                "credit",
+                "CASHBACK",
+                null,
+                "CARD",
+                "refund",
+                true)
+        };
+
+        var result = CardCycleReconciler.TryBuild(
+        [
+            "Previous Statement Balance INR 500.00",
+            "Purchases and Other Charges INR 800.00",
+            "Payments and Credits INR 50.00",
+            "Total Amount Due (INR) 1,250.00"
+        ],
+        transactions);
+
+        Assert.NotNull(result);
+        Assert.Equal("matched", result.Status);
+        Assert.Equal(1_250m, result.ClosingBalance);
+        Assert.Equal(0m, result.Variance);
+    }
+
+    [Fact]
+    public void CardCycleReconciliationRemainsUnavailableWithoutIssuerTotals()
+    {
+        var result = CardCycleReconciler.TryBuild(
+        [
+            "01/11/2026 RESTAURANT 800.00 DR"
+        ],
+        [
+            new StatementTransaction(
+                DateTimeOffset.Parse("2026-11-01T00:00:00+05:30"),
+                800m,
+                "debit",
+                "RESTAURANT",
+                null,
+                "CARD",
+                "purchase",
+                true)
+        ]);
+
+        Assert.Null(result);
     }
 
     [Fact]
