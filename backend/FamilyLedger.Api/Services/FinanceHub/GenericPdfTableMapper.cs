@@ -11,7 +11,7 @@ public sealed record GenericPdfMapResult(
 public static class GenericPdfTableMapper
 {
     private static readonly Regex DateRowRegex = new(
-        @"^(?<date>\d{1,2}[-/]\d{1,2}[-/]\d{2,4}|\d{1,2}\s+[A-Za-z]{3}\s+\d{2,4})\s+(?<body>.+)$",
+        @"^(?<date>\d{1,2}[-/]\d{1,2}[-/]\d{2,4}|\d{1,2}\s+[A-Za-z]{3}\s+\d{2,4})(?:\s+(?<body>.*))?$",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     private static readonly Regex AmountRegex = new(
@@ -45,8 +45,8 @@ public static class GenericPdfTableMapper
         var lines = extractedLines
             .Select(line => Regex.Replace(line.Trim(), @"\s+", " "))
             .Where(line => line.Length > 0)
-            .Distinct(StringComparer.Ordinal)
             .ToArray();
+        var candidateRows = AssembleCandidateRows(lines, sourceType);
 
         var openingBalance = FindOpeningBalance(lines);
         decimal? previousBalance = openingBalance;
@@ -54,7 +54,7 @@ public static class GenericPdfTableMapper
         var skipped = 0;
         var transactions = new List<StatementTransaction>();
 
-        foreach (var line in lines)
+        foreach (var line in candidateRows)
         {
             var row = DateRowRegex.Match(line);
             if (!row.Success || !TryParseDate(row.Groups["date"].Value, out var occurredAt))
@@ -151,19 +151,101 @@ public static class GenericPdfTableMapper
                 sourceType));
         }
 
-        var unique = transactions
-            .DistinctBy(item => string.Join(
-                "|",
-                item.OccurredAt.ToString("O", CultureInfo.InvariantCulture),
-                item.Amount.ToString("0.00", CultureInfo.InvariantCulture),
-                item.Direction,
-                item.Narration))
-            .ToArray();
+        var mappedTransactions = transactions.ToArray();
 
         return new GenericPdfMapResult(
-            unique,
-            BuildReconciliation(unique, openingBalance, finalBalance, skipped),
+            mappedTransactions,
+            BuildReconciliation(
+                mappedTransactions,
+                openingBalance,
+                finalBalance,
+                skipped),
             skipped);
+    }
+
+    private static IReadOnlyList<string> AssembleCandidateRows(
+        IReadOnlyList<string> lines,
+        string sourceType)
+    {
+        var rows = new List<string>();
+        string? current = null;
+        var continuationCount = 0;
+
+        foreach (var line in lines)
+        {
+            if (DateRowRegex.IsMatch(line))
+            {
+                if (current != null)
+                    rows.Add(current);
+
+                current = line;
+                continuationCount = 0;
+                continue;
+            }
+
+            if (current == null)
+                continue;
+
+            if (IsBoundaryLine(line))
+            {
+                rows.Add(current);
+                current = null;
+                continue;
+            }
+
+            var currentComplete = HasRequiredAmounts(current, sourceType);
+            var continuationHasAmount = AmountRegex.IsMatch(line);
+            var continuationIsMarker = MarkerRegex.IsMatch(line);
+            if (currentComplete &&
+                continuationHasAmount &&
+                !continuationIsMarker)
+            {
+                rows.Add(current);
+                current = null;
+                continue;
+            }
+
+            if (continuationCount >= 6)
+            {
+                rows.Add(current);
+                current = null;
+                continue;
+            }
+
+            current += " " + line;
+            continuationCount++;
+        }
+
+        if (current != null)
+            rows.Add(current);
+
+        return rows;
+    }
+
+    private static bool HasRequiredAmounts(string row, string sourceType)
+    {
+        var match = DateRowRegex.Match(row);
+        if (!match.Success)
+            return false;
+
+        var body = match.Groups["body"].Value;
+        var amountCount = AmountRegex.Matches(body).Count;
+        if (sourceType == "credit_card")
+            return amountCount >= 1;
+
+        return amountCount >= 2 ||
+               (amountCount >= 1 && MarkerRegex.IsMatch(body));
+    }
+
+    private static bool IsBoundaryLine(string line)
+    {
+        var value = line.ToLowerInvariant();
+        return value.Contains("opening balance") ||
+               value.Contains("closing balance") ||
+               value.Contains("total amount due") ||
+               value.Contains("statement summary") ||
+               value.StartsWith("date narration") ||
+               value.StartsWith("transaction date");
     }
 
     private static StatementTransaction CreateTransaction(
