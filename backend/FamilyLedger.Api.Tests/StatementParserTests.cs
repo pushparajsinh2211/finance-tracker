@@ -26,7 +26,7 @@ public sealed class StatementParserTests
         var result = await parser.ParseAsync(file, sourceType, null, default);
 
         Assert.Equal(expectedParser, result.Parser);
-        Assert.Equal("2.2.0", result.ParserVersion);
+        Assert.Equal("2.3.0", result.ParserVersion);
         Assert.Equal(2, result.Transactions.Count);
         Assert.Empty(result.Errors);
         Assert.Equal(expectedReconciliation, result.Reconciliation.Status);
