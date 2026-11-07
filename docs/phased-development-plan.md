@@ -25,12 +25,13 @@ Implemented in the import expansion:
 - Initial SBI, HDFC and ICICI bank/card header profiles with synthetic redacted fixtures.
 - Local OCR fallback for unprotected scanned PDFs, with every OCR row flagged for review.
 - Running-balance reconciliation, variance reporting and explicit mismatch confirmation.
+- HDFC/ICICI-compatible credit-card cycle reconciliation using previous balance, purchase, payment and amount-due metadata.
 - Optional private original retention for 30 or 90 days with immediate and automatic expiry deletion.
 - Export and guarded account deletion workflows.
 
 Remaining:
 - Additional institution/version profiles as real export formats change.
-- Issuer-specific card-cycle reconciliation and improved OCR layout models.
+- Additional issuer/version cycle-total aliases and improved OCR layout models.
 
 ## Phase 1 original scope
 
