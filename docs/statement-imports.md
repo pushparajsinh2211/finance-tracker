@@ -29,6 +29,8 @@ Text PDFs are parsed with PdfPig. If a PDF contains too little extractable text,
 - statement content is not sent to a third-party OCR API;
 - temporary PDFs and page images are removed after processing;
 - OCR rows are always marked as needing review;
+- date-led transaction fragments split across narration, amount, direction and balance lines are conservatively reassembled;
+- repeated identical transactions are preserved for occurrence-aware deduplication instead of being discarded during text extraction;
 - files remain limited to 10 MB and 100 PDF pages;
 - password-protected scanned PDFs are not passed to command-line tools, preventing password exposure through process arguments;
 - unclear scans may still need CSV export or a dedicated parser.
