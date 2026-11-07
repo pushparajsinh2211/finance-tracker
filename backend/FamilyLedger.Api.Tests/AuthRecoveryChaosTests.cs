@@ -150,7 +150,7 @@ public sealed class AuthRecoveryChaosTests
             new ConfirmationStatusRequest { Token = token });
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        Assert.Contains("\"confirmed\":true", JsonSerializer.Serialize(ok.Value));
+        Assert.Contains("\"Confirmed\":true", JsonSerializer.Serialize(ok.Value));
         Assert.EndsWith($"/auth/v1/admin/users/{userId}", requestedUrl);
         Assert.Equal("Bearer private-service-role-test-key", authorization);
     }
