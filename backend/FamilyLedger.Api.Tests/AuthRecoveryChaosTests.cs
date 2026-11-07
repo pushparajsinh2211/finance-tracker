@@ -51,12 +51,12 @@ public sealed class AuthRecoveryChaosTests
         var result = await controller.ResendConfirmation(new ResendConfirmationRequest
         {
             Email = "person@example.test",
-            RedirectTo = "https://finance.example/login?confirmed=1#supabase-token"
+            RedirectTo = "https://finance.example/email-confirmed?registration=test-id#supabase-token"
         });
 
         Assert.IsType<OkObjectResult>(result);
         Assert.Contains(
-            "https://finance.example/login?confirmed=1",
+            "https://finance.example/email-confirmed?registration=test-id",
             requestBody);
         Assert.DoesNotContain("supabase-token", requestBody);
     }
@@ -124,6 +124,54 @@ public sealed class AuthRecoveryChaosTests
         Assert.False(called);
     }
 
+
+    [Fact]
+    public async Task ConfirmationStatusAcceptsSignedTokenAndReadsAdminUser()
+    {
+        string? requestedUrl = null;
+        string? authorization = null;
+        var controller = CreateController(new ChaosHandler((request, _) =>
+        {
+            requestedUrl = request.RequestUri?.ToString();
+            authorization = request.Headers.Authorization?.ToString();
+            return Task.FromResult(Response(
+                HttpStatusCode.OK,
+                "{\"email_confirmed_at\":\"2026-11-07T12:00:00Z\"}"));
+        }));
+        var userId = Guid.NewGuid().ToString();
+        var tokenFactory = typeof(AuthController).GetMethod(
+            "CreateConfirmationStatusToken",
+            System.Reflection.BindingFlags.Instance |
+            System.Reflection.BindingFlags.NonPublic);
+        var token = Assert.IsType<string>(
+            tokenFactory?.Invoke(controller, [userId]));
+
+        var result = await controller.ConfirmationStatus(
+            new ConfirmationStatusRequest { Token = token });
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.Contains("\"Confirmed\":true", JsonSerializer.Serialize(ok.Value));
+        Assert.EndsWith($"/auth/v1/admin/users/{userId}", requestedUrl);
+        Assert.Equal("Bearer private-service-role-test-key", authorization);
+    }
+
+    [Fact]
+    public async Task ConfirmationStatusRejectsTamperedTokenWithoutCallingProvider()
+    {
+        var called = false;
+        var controller = CreateController(new ChaosHandler((_, _) =>
+        {
+            called = true;
+            return Task.FromResult(Response(HttpStatusCode.OK, "{}"));
+        }));
+
+        var result = await controller.ConfirmationStatus(
+            new ConfirmationStatusRequest { Token = "tampered.token" });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        Assert.False(called);
+    }
+
     private static AuthController CreateController(
         HttpMessageHandler handler,
         bool includeConfiguration = true)
@@ -132,7 +180,8 @@ public sealed class AuthRecoveryChaosTests
             ? new Dictionary<string, string?>
             {
                 ["Supabase:Url"] = "https://supabase.invalid",
-                ["Supabase:AnonKey"] = "public-test-key"
+                ["Supabase:AnonKey"] = "public-test-key",
+                ["Supabase:ServiceRoleKey"] = "private-service-role-test-key"
             }
             : new Dictionary<string, string?>();
 

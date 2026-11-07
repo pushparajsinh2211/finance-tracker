@@ -22,4 +22,8 @@ Never commit SMTP passwords. They belong only in Supabase's encrypted SMTP confi
 
 The API calls Supabase's `/auth/v1/recover` endpoint directly and preserves the configured recovery redirect. Rate-limit responses are normalized to HTTP 429 with a stable `email_rate_limited` code. The Angular form shows a clear message and enforces a persisted resend cooldown.
 
+For signup confirmation, Supabase redirects the email link to a dedicated verification-result page. That page only reports whether verification succeeded; it does not redirect to login or retain the Supabase session fragment. The original registration tab receives a same-browser notification and also checks confirmation through a 30-minute signed status token. Once confirmed, only the original tab moves to the login page.
+
+The confirmation status token contains a user identifier and expiry protected by an HMAC derived on the server. The service-role key never reaches the browser. The status endpoint accepts only a valid, unexpired token and returns a confirmation boolean without exposing the Supabase admin response.
+
 The application cannot bypass a provider-side sending quota. Custom SMTP is therefore required to resolve project-wide production delivery limits.
