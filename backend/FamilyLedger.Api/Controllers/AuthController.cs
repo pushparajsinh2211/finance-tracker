@@ -1,7 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Supabase.Gotrue;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Net.Mail;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace FamilyLedger.Api.Controllers
 {
@@ -45,13 +50,21 @@ namespace FamilyLedger.Api.Controllers
                 var session = await _supabaseClient.Auth.SignUp(request.Email, request.Password, options);
                 var requiresEmailConfirmation = string.IsNullOrEmpty(session?.AccessToken);
 
-                return Ok(new AuthResponse(session)
+                var response = new AuthResponse(session)
                 {
                     RequiresEmailConfirmation = requiresEmailConfirmation,
                     Message = requiresEmailConfirmation
                         ? "Account created. Check your inbox and confirm your email before signing in."
                         : "Account created and signed in."
-                });
+                };
+
+                if (requiresEmailConfirmation && !string.IsNullOrWhiteSpace(response.UserId))
+                {
+                    response.ConfirmationStatusToken =
+                        CreateConfirmationStatusToken(response.UserId);
+                }
+
+                return Ok(response);
             }
             catch (Exception ex)
             {
@@ -118,6 +131,65 @@ namespace FamilyLedger.Api.Controllers
                 return StatusCode(StatusCodes.Status502BadGateway, new
                 {
                     Message = "Confirmation email could not be sent. Please try again shortly."
+                });
+            }
+        }
+
+        [HttpPost("confirmation-status")]
+        public async Task<IActionResult> ConfirmationStatus(
+            [FromBody] ConfirmationStatusRequest request)
+        {
+            if (!TryValidateConfirmationStatusToken(request.Token, out var userId))
+            {
+                return BadRequest(new
+                {
+                    Message = "The confirmation status request is invalid or expired."
+                });
+            }
+
+            var supabaseUrl = _configuration["Supabase:Url"];
+            var serviceRoleKey = _configuration["Supabase:ServiceRoleKey"];
+            if (string.IsNullOrWhiteSpace(supabaseUrl) ||
+                string.IsNullOrWhiteSpace(serviceRoleKey))
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+                {
+                    Message = "Confirmation status is temporarily unavailable."
+                });
+            }
+
+            try
+            {
+                using var requestMessage = new HttpRequestMessage(
+                    HttpMethod.Get,
+                    $"{supabaseUrl.TrimEnd('/')}/auth/v1/admin/users/{Uri.EscapeDataString(userId)}");
+                requestMessage.Headers.Add("apikey", serviceRoleKey);
+                requestMessage.Headers.Authorization =
+                    new AuthenticationHeaderValue("Bearer", serviceRoleKey);
+
+                var client = _httpClientFactory.CreateClient();
+                using var response = await client.SendAsync(requestMessage);
+                if (!response.IsSuccessStatusCode)
+                {
+                    return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+                    {
+                        Message = "Confirmation status is temporarily unavailable."
+                    });
+                }
+
+                await using var body = await response.Content.ReadAsStreamAsync();
+                using var document = await JsonDocument.ParseAsync(body);
+                var root = document.RootElement;
+                var confirmed = HasTimestamp(root, "email_confirmed_at") ||
+                                HasTimestamp(root, "confirmed_at");
+
+                return Ok(new { Confirmed = confirmed });
+            }
+            catch
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+                {
+                    Message = "Confirmation status is temporarily unavailable."
                 });
             }
         }
@@ -218,6 +290,83 @@ namespace FamilyLedger.Api.Controllers
             }
         }
 
+        private string? CreateConfirmationStatusToken(string userId)
+        {
+            var serviceRoleKey = _configuration["Supabase:ServiceRoleKey"];
+            if (string.IsNullOrWhiteSpace(serviceRoleKey))
+            {
+                return null;
+            }
+
+            var expiresAt = DateTimeOffset.UtcNow.AddMinutes(30).ToUnixTimeSeconds();
+            var payload = $"{userId}|{expiresAt}";
+            var payloadBytes = Encoding.UTF8.GetBytes(payload);
+            var signature = HMACSHA256.HashData(
+                DeriveConfirmationSigningKey(serviceRoleKey),
+                payloadBytes);
+
+            return $"{WebEncoders.Base64UrlEncode(payloadBytes)}.{WebEncoders.Base64UrlEncode(signature)}";
+        }
+
+        private bool TryValidateConfirmationStatusToken(
+            string? token,
+            out string userId)
+        {
+            userId = string.Empty;
+            var serviceRoleKey = _configuration["Supabase:ServiceRoleKey"];
+            if (string.IsNullOrWhiteSpace(serviceRoleKey) ||
+                string.IsNullOrWhiteSpace(token))
+            {
+                return false;
+            }
+
+            try
+            {
+                var parts = token.Split('.', 2);
+                if (parts.Length != 2)
+                {
+                    return false;
+                }
+
+                var payloadBytes = WebEncoders.Base64UrlDecode(parts[0]);
+                var providedSignature = WebEncoders.Base64UrlDecode(parts[1]);
+                var expectedSignature = HMACSHA256.HashData(
+                    DeriveConfirmationSigningKey(serviceRoleKey),
+                    payloadBytes);
+                if (!CryptographicOperations.FixedTimeEquals(
+                        providedSignature,
+                        expectedSignature))
+                {
+                    return false;
+                }
+
+                var payload = Encoding.UTF8.GetString(payloadBytes).Split('|', 2);
+                if (payload.Length != 2 ||
+                    !Guid.TryParse(payload[0], out _) ||
+                    !long.TryParse(payload[1], out var expiresAt) ||
+                    expiresAt < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+                {
+                    return false;
+                }
+
+                userId = payload[0];
+                return true;
+            }
+            catch (FormatException)
+            {
+                return false;
+            }
+        }
+
+        private static byte[] DeriveConfirmationSigningKey(string serviceRoleKey) =>
+            SHA256.HashData(Encoding.UTF8.GetBytes(
+                $"financehub-confirmation-status|{serviceRoleKey}"));
+
+        private static bool HasTimestamp(JsonElement root, string propertyName) =>
+            root.TryGetProperty(propertyName, out var value) &&
+            value.ValueKind == JsonValueKind.String &&
+            !string.IsNullOrWhiteSpace(value.GetString());
+
         private static bool TryValidateRedirect(string? value, out string? redirectTo)
         {
             redirectTo = null;
@@ -260,6 +409,11 @@ namespace FamilyLedger.Api.Controllers
         public string? RedirectTo { get; set; }
     }
 
+    public class ConfirmationStatusRequest
+    {
+        public string Token { get; set; } = string.Empty;
+    }
+
     public class LoginRequest
     {
         public string Email { get; set; } = string.Empty;
@@ -279,6 +433,7 @@ namespace FamilyLedger.Api.Controllers
         public string? UserId { get; set; }
         public bool RequiresEmailConfirmation { get; set; }
         public string? Message { get; set; }
+        public string? ConfirmationStatusToken { get; set; }
 
         public AuthResponse(Supabase.Gotrue.Session? session)
         {
