@@ -190,10 +190,30 @@ test('registration requests the correct confirmation redirect and shows safe fee
 
   await expect(page.getByText('Check your inbox and confirm your email before signing in.')).toBeVisible();
   const request = state.requests.find(item => item.path === '/api/auth/register');
-  expect(request?.body).toMatchObject({
-    email: 'new-user@example.test',
-    redirectTo: 'http://127.0.0.1:4200/login?confirmed=1'
-  });
+  const requestBody = request?.body as {
+    email: string;
+    redirectTo: string;
+  };
+  expect(requestBody.email).toBe('new-user@example.test');
+  const redirect = new URL(requestBody.redirectTo);
+  expect(redirect.origin).toBe('http://127.0.0.1:4200');
+  expect(redirect.pathname).toBe('/email-confirmed');
+  expect(redirect.searchParams.get('registration')).toBeTruthy();
+});
+
+test('confirmation email tab stays on a terminal verification page', async ({ page }) => {
+  await mockApi(page, initialState());
+
+  await page.goto(
+    '/email-confirmed?registration=e2e-registration#access_token=temporary&type=signup'
+  );
+
+  await expect(page).toHaveURL(
+    'http://127.0.0.1:4200/email-confirmed?registration=e2e-registration'
+  );
+  await expect(page.getByRole('heading', { name: 'Email verified' }))
+    .toBeVisible();
+  await expect(page.getByText(/You can close this tab/i)).toBeVisible();
 });
 
 test('password recovery displays provider throttling and prevents immediate retries', async ({ page }) => {
