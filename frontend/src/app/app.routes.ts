@@ -3,6 +3,7 @@ import { LoginComponent } from './auth/login/login.component';
 import { RegisterComponent } from './auth/register/register.component';
 import { ForgotPasswordComponent } from './auth/forgot-password/forgot-password.component';
 import { UpdatePasswordComponent } from './auth/update-password/update-password.component';
+import { EmailConfirmedComponent } from './auth/email-confirmed/email-confirmed.component';
 import { OnboardingComponent } from './onboarding/onboarding.component';
 import { authGuard } from './auth/auth.guard';
 import { familyGuard } from './auth/family.guard';
@@ -13,6 +14,7 @@ export const routes: Routes = [
     { path: 'register', component: RegisterComponent },
     { path: 'forgot-password', component: ForgotPasswordComponent },
     { path: 'update-password', component: UpdatePasswordComponent },
+    { path: 'email-confirmed', component: EmailConfirmedComponent },
     { path: 'onboarding', canActivate: [authGuard], component: OnboardingComponent },
     {
         path: 'privacy',
