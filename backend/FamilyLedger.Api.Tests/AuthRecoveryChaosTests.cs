@@ -24,13 +24,41 @@ public sealed class AuthRecoveryChaosTests
         var result = await controller.ResetPassword(new ResetPasswordRequest
         {
             Email = "person@example.test",
-            RedirectTo = "https://finance.example/update-password"
+            RedirectTo = "https://finance.example/update-password?source=forgot#temporary-token"
         });
 
         Assert.IsType<OkObjectResult>(result);
         Assert.StartsWith("https://supabase.invalid/auth/v1/recover?", requestedUrl);
         Assert.Contains("redirect_to=", requestedUrl);
+        var encodedRedirect = requestedUrl?.Split("redirect_to=", 2)[1];
+        Assert.Equal(
+            "https://finance.example/update-password?source=forgot",
+            Uri.UnescapeDataString(encodedRedirect ?? ""));
+        Assert.DoesNotContain("temporary-token", requestedUrl);
         Assert.DoesNotContain("/magiclink", requestedUrl);
+    }
+
+    [Fact]
+    public async Task ConfirmationResendPreservesQueryAndStripsFragment()
+    {
+        string? requestBody = null;
+        var controller = CreateController(new ChaosHandler(async (request, _) =>
+        {
+            requestBody = await request.Content!.ReadAsStringAsync();
+            return Response(HttpStatusCode.OK, "{}");
+        }));
+
+        var result = await controller.ResendConfirmation(new ResendConfirmationRequest
+        {
+            Email = "person@example.test",
+            RedirectTo = "https://finance.example/login?confirmed=1#supabase-token"
+        });
+
+        Assert.IsType<OkObjectResult>(result);
+        Assert.Contains(
+            "https://finance.example/login?confirmed=1",
+            requestBody);
+        Assert.DoesNotContain("supabase-token", requestBody);
     }
 
     [Fact]

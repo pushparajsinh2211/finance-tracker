@@ -241,7 +241,8 @@ namespace FamilyLedger.Api.Controllers
                 return false;
             }
 
-            redirectTo = uri.GetLeftPart(UriPartial.Path);
+            // Preserve intentional UI state such as ?confirmed=1 while never forwarding fragments.
+            redirectTo = uri.GetLeftPart(UriPartial.Query);
             return true;
         }
     }
