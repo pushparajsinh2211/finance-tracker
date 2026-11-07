@@ -61,6 +61,59 @@ public sealed class StatementParserTests
         Assert.Equal("generic-csv", profile.Id);
     }
 
+
+    [Fact]
+    public void GenericPdfMapperUsesRunningBalanceToMapBankRows()
+    {
+        var result = GenericPdfTableMapper.Map(
+        [
+            "Opening Balance 10,000.00",
+            "01/11/2026 UPI SHOP UPI000000000001 500.00 9,500.00",
+            "02/11/2026 NEFT SALARY NEFT000000000002 1,000.00 10,500.00"
+        ],
+        "bank");
+
+        Assert.Equal(2, result.Transactions.Count);
+        Assert.Equal("debit", result.Transactions[0].Direction);
+        Assert.Equal(500m, result.Transactions[0].Amount);
+        Assert.Equal("UPI", result.Transactions[0].PaymentRail);
+        Assert.Equal("credit", result.Transactions[1].Direction);
+        Assert.Equal(1_000m, result.Transactions[1].Amount);
+        Assert.Equal("NEFT", result.Transactions[1].PaymentRail);
+        Assert.All(result.Transactions, transaction => Assert.True(transaction.NeedsReview));
+        Assert.Equal("matched", result.Reconciliation.Status);
+        Assert.Equal(0m, result.Reconciliation.Variance);
+        Assert.Equal(0, result.SkippedCandidateRows);
+    }
+
+    [Fact]
+    public void GenericPdfMapperSkipsBankRowWhenDirectionCannotBeVerified()
+    {
+        var result = GenericPdfTableMapper.Map(
+        [
+            "01/11/2026 UNKNOWN TRANSFER 500.00"
+        ],
+        "bank");
+
+        Assert.Empty(result.Transactions);
+        Assert.Equal(1, result.SkippedCandidateRows);
+        Assert.Equal("unavailable", result.Reconciliation.Status);
+    }
+
+    [Theory]
+    [InlineData("01/11/2026 RESTAURANT 800.00 DR", "debit")]
+    [InlineData("02/11/2026 PAYMENT RECEIVED 1,200.00 CR", "credit")]
+    public void GenericPdfMapperUsesExplicitCardDirection(
+        string row,
+        string expectedDirection)
+    {
+        var result = GenericPdfTableMapper.Map([row], "credit_card");
+
+        var transaction = Assert.Single(result.Transactions);
+        Assert.Equal(expectedDirection, transaction.Direction);
+        Assert.True(transaction.NeedsReview);
+    }
+
     private sealed class RejectingOcrService : IStatementOcrService
     {
         public Task<string> RecognizePdfAsync(
