@@ -27,7 +27,7 @@ Implemented in the import expansion:
 - Running-balance reconciliation, variance reporting and explicit mismatch confirmation.
 - HDFC/ICICI-compatible credit-card cycle reconciliation using previous balance, purchase, payment and amount-due metadata.
 - Spatial Tesseract TSV row segmentation plus conservative multi-line OCR assembly and duplicate-row preservation.
-- ICICI-style operative-history PDF rows with serial prefixes, hyphenated month dates and separate withdrawal/deposit columns.
+- ICICI-style operative-history PDF rows with serial prefixes, dotted or hyphenated dates, and separate withdrawal/deposit columns, including blank-cell direction inference from header coordinates.
 - Optional private original retention for 30 or 90 days with immediate and automatic expiry deletion.
 - Export and guarded account deletion workflows.
 
