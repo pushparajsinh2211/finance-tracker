@@ -12,7 +12,7 @@ public sealed partial class StatementParser : IStatementParser
 {
     public const long MaximumFileBytes = 10 * 1024 * 1024;
     public const int MaximumTransactions = 5000;
-    private const string ParserVersion = "2.3.0";
+    private const string ParserVersion = "2.4.0";
 
     private readonly IStatementOcrService _ocrService;
 
