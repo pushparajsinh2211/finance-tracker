@@ -11,11 +11,11 @@ public sealed record GenericPdfMapResult(
 public static class GenericPdfTableMapper
 {
     private static readonly Regex DateRowRegex = new(
-        @"^(?:\d{1,5}\s+)?(?<date>\d{1,2}[-/]\d{1,2}[-/]\d{2,4}|\d{1,2}(?:\s+|-)\p{L}{3}(?:\s+|-)\d{2,4})(?:\s+(?<body>.*))?$",
+        @"^(?:\d{1,5}\s+)?(?<date>\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|\d{1,2}(?:\s+|-)\p{L}{3}(?:\s+|-)\d{2,4})(?:\s+(?<body>.*))?$",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     private static readonly Regex AmountRegex = new(
-        @"(?<!\d)(?<amount>\(?-?(?:₹\s*)?\d[\d,]*\.\d{2}\)?)(?!\d)",
+        @"(?<![\d.])(?<amount>\(?-?(?:₹\s*)?\d[\d,]*\.\d{2}\)?)(?![\d.])",
         RegexOptions.Compiled);
 
     private static readonly Regex MarkerRegex = new(
@@ -34,6 +34,7 @@ public static class GenericPdfTableMapper
     [
         "dd/MM/yyyy", "d/M/yyyy", "dd-MM-yyyy", "d-M-yyyy",
         "dd/MM/yy", "d/M/yy", "dd-MM-yy", "d-M-yy",
+        "dd.MM.yyyy", "d.M.yyyy", "dd.MM.yy", "d.M.yy",
         "yyyy-MM-dd", "dd MMM yyyy", "d MMM yyyy",
         "dd MMM yy", "d MMM yy", "dd-MMM-yyyy", "d-MMM-yyyy",
         "dd-MMM-yy", "d-MMM-yy"
@@ -292,7 +293,7 @@ public static class GenericPdfTableMapper
         var withoutMarker = MarkerRegex.Replace(withoutAmounts, " ");
         var withoutValueDate = Regex.Replace(
             withoutMarker,
-            @"^(?:\d{1,2}[-/]\d{1,2}[-/]\d{2,4}|\d{1,2}(?:\s+|-)\p{L}{3}(?:\s+|-)\d{2,4})\s+",
+            @"^(?:\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|\d{1,2}(?:\s+|-)\p{L}{3}(?:\s+|-)\d{2,4})\s+",
             "",
             RegexOptions.IgnoreCase);
         var narration = Regex.Replace(withoutValueDate, @"\s+", " ").Trim(' ', '-', '|');
