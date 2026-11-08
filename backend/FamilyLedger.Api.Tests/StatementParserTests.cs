@@ -26,7 +26,7 @@ public sealed class StatementParserTests
         var result = await parser.ParseAsync(file, sourceType, null, default);
 
         Assert.Equal(expectedParser, result.Parser);
-        Assert.Equal("2.4.0", result.ParserVersion);
+        Assert.Equal("2.5.0", result.ParserVersion);
         Assert.Equal(2, result.Transactions.Count);
         Assert.Empty(result.Errors);
         Assert.Equal(expectedReconciliation, result.Reconciliation.Status);
@@ -318,6 +318,26 @@ public sealed class StatementParserTests
         Assert.Equal("credit", transaction.Direction);
         Assert.Equal(2_000m, transaction.Amount);
         Assert.Equal("CASH DEPOSIT", transaction.Narration);
+    }
+
+    [Fact]
+    public void GenericPdfMapperSupportsDottedDatesWithoutTreatingThemAsAmounts()
+    {
+        var result = GenericPdfTableMapper.Map(
+        [
+            "Opening Balance 10,000.00",
+            "1 03.11.2026 03.11.2026 UPI PURCHASE 500.00 9,500.00 DR",
+            "2 04.11.2026 04.11.2026 REFUND 1,000.00 10,500.00 CR"
+        ],
+        "bank");
+
+        Assert.Equal(2, result.Transactions.Count);
+        Assert.Equal("debit", result.Transactions[0].Direction);
+        Assert.Equal(500m, result.Transactions[0].Amount);
+        Assert.Equal("credit", result.Transactions[1].Direction);
+        Assert.Equal(1_000m, result.Transactions[1].Amount);
+        Assert.Equal("matched", result.Reconciliation.Status);
+        Assert.DoesNotContain("03.11", result.Transactions[0].Narration);
     }
 
     private sealed class RejectingOcrService : IStatementOcrService
