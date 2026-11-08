@@ -18,7 +18,7 @@ A profile match does not certify a statement as authoritative. Users must review
 
 ## Generic PDF table fallback
 
-When a text PDF does not match the strict row parser, FinanceHub also reconstructs rows from positioned PDF words. The fallback supports common Indian bank and card patterns, including date-led rows, serial-number-prefixed rows, numeric and `dd-MMM-yyyy` dates, decimal debit/credit amounts, `DR`/`CR` markers, and running balances. ICICI-style operative transaction histories with separate withdrawal, deposit and balance columns are mapped only when exactly one transaction column is non-zero.
+When a text PDF does not match the strict row parser, FinanceHub also reconstructs rows from positioned PDF words. The fallback supports common Indian bank and card patterns, including date-led rows, serial-number-prefixed rows, numeric slash, hyphen or dot dates and `dd-MMM-yyyy` dates, decimal debit/credit amounts, `DR`/`CR` markers, and running balances. ICICI-style operative transaction histories with separate withdrawal, deposit and balance columns are mapped only when exactly one transaction column is non-zero.
 
 For bank statements, direction is accepted only when it is explicit or the running-balance change verifies the amount. Ambiguous candidates are skipped and reported; mapped rows are marked for review. This improves compatibility with ICICI and other issuers without silently guessing transactions. It is still a best-effort importer, not production bank connectivity, and a bank CSV export remains the most reliable fallback for an unsupported layout.
 
