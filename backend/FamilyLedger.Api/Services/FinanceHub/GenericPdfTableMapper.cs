@@ -11,11 +11,11 @@ public sealed record GenericPdfMapResult(
 public static class GenericPdfTableMapper
 {
     private static readonly Regex DateRowRegex = new(
-        @"^(?<date>\d{1,2}[-/]\d{1,2}[-/]\d{2,4}|\d{1,2}\s+[A-Za-z]{3}\s+\d{2,4})(?:\s+(?<body>.*))?$",
+        @"^(?:\d{1,5}\s+)?(?<date>\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|\d{1,2}(?:\s+|-)\p{L}{3}(?:\s+|-)\d{2,4})(?:\s+(?<body>.*))?$",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     private static readonly Regex AmountRegex = new(
-        @"(?<!\d)(?<amount>\(?-?(?:₹\s*)?\d[\d,]*\.\d{2}\)?)(?!\d)",
+        @"(?<![\d.])(?<amount>\(?-?(?:₹\s*)?\d[\d,]*\.\d{2}\)?)(?![\d.])",
         RegexOptions.Compiled);
 
     private static readonly Regex MarkerRegex = new(
@@ -34,8 +34,10 @@ public static class GenericPdfTableMapper
     [
         "dd/MM/yyyy", "d/M/yyyy", "dd-MM-yyyy", "d-M-yyyy",
         "dd/MM/yy", "d/M/yy", "dd-MM-yy", "d-M-yy",
+        "dd.MM.yyyy", "d.M.yyyy", "dd.MM.yy", "d.M.yy",
         "yyyy-MM-dd", "dd MMM yyyy", "d MMM yyyy",
-        "dd MMM yy", "d MMM yy"
+        "dd MMM yy", "d MMM yy", "dd-MMM-yyyy", "d-MMM-yyyy",
+        "dd-MMM-yy", "d-MMM-yy"
     ];
 
     public static GenericPdfMapResult Map(
@@ -90,6 +92,7 @@ public static class GenericPdfTableMapper
 
             decimal? reportedBalance = null;
             Match? transactionAmountMatch = null;
+            string? columnDirection = null;
             if (amountMatches.Length >= 2)
             {
                 if (TryParseAmount(amountMatches[^1].Groups["amount"].Value, out var balance))
@@ -102,6 +105,19 @@ public static class GenericPdfTableMapper
                     .Take(amountMatches.Length - 1)
                     .LastOrDefault(match =>
                         TryParseAmount(match.Groups["amount"].Value, out var value) && value != 0);
+
+                // Common Indian bank history exports expose separate withdrawal and
+                // deposit columns followed by the running balance. Infer direction
+                // only when exactly one of those two transaction columns is non-zero.
+                if (amountMatches.Length == 3 &&
+                    TryParseAmount(amountMatches[0].Groups["amount"].Value, out var withdrawal) &&
+                    TryParseAmount(amountMatches[1].Groups["amount"].Value, out var deposit))
+                {
+                    if (withdrawal != 0 && deposit == 0)
+                        columnDirection = "debit";
+                    else if (withdrawal == 0 && deposit != 0)
+                        columnDirection = "credit";
+                }
             }
             else if (marker.Success)
             {
@@ -119,7 +135,7 @@ public static class GenericPdfTableMapper
             }
 
             var amount = Math.Abs(rawAmount);
-            var direction = MarkerDirection(marker);
+            var direction = columnDirection ?? MarkerDirection(marker);
             var verifiedByBalance = false;
 
             if (previousBalance.HasValue && reportedBalance.HasValue)
@@ -277,7 +293,7 @@ public static class GenericPdfTableMapper
         var withoutMarker = MarkerRegex.Replace(withoutAmounts, " ");
         var withoutValueDate = Regex.Replace(
             withoutMarker,
-            @"^\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\s+",
+            @"^(?:\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|\d{1,2}(?:\s+|-)\p{L}{3}(?:\s+|-)\d{2,4})\s+",
             "",
             RegexOptions.IgnoreCase);
         var narration = Regex.Replace(withoutValueDate, @"\s+", " ").Trim(' ', '-', '|');

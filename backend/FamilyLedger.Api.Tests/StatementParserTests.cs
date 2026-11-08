@@ -26,7 +26,7 @@ public sealed class StatementParserTests
         var result = await parser.ParseAsync(file, sourceType, null, default);
 
         Assert.Equal(expectedParser, result.Parser);
-        Assert.Equal("2.3.0", result.ParserVersion);
+        Assert.Equal("2.5.0", result.ParserVersion);
         Assert.Equal(2, result.Transactions.Count);
         Assert.Empty(result.Errors);
         Assert.Equal(expectedReconciliation, result.Reconciliation.Status);
@@ -266,6 +266,78 @@ public sealed class StatementParserTests
         var transaction = Assert.Single(result.Transactions);
         Assert.Equal(expectedDirection, transaction.Direction);
         Assert.True(transaction.NeedsReview);
+    }
+
+    [Fact]
+    public void GenericPdfMapperSupportsIciciOperativeHistoryColumns()
+    {
+        var result = GenericPdfTableMapper.Map(
+        [
+            "Opening Balance 10,000.00",
+            "1 01/11/2026 01/11/2026 UPI SHOP UPI000000000001 500.00 0.00 9,500.00 CR",
+            "2 02/11/2026 02/11/2026 NEFT SALARY NEFT000000000002 0.00 1,000.00 10,500.00 CR"
+        ],
+        "bank");
+
+        Assert.Equal(2, result.Transactions.Count);
+        Assert.Equal("debit", result.Transactions[0].Direction);
+        Assert.Equal(500m, result.Transactions[0].Amount);
+        Assert.Equal("credit", result.Transactions[1].Direction);
+        Assert.Equal(1_000m, result.Transactions[1].Amount);
+        Assert.Equal("matched", result.Reconciliation.Status);
+        Assert.Equal(0, result.SkippedCandidateRows);
+    }
+
+    [Fact]
+    public void GenericPdfMapperUsesWithdrawalDepositColumnsWithoutOpeningBalance()
+    {
+        var result = GenericPdfTableMapper.Map(
+        [
+            "1 01/11/2026 01/11/2026 PURCHASE 500.00 0.00 9,500.00",
+            "2 02/11/2026 02/11/2026 REFUND 0.00 100.00 9,600.00"
+        ],
+        "bank");
+
+        Assert.Equal(2, result.Transactions.Count);
+        Assert.Equal("debit", result.Transactions[0].Direction);
+        Assert.Equal("credit", result.Transactions[1].Direction);
+        Assert.Equal("unavailable", result.Reconciliation.Status);
+        Assert.Equal(0, result.SkippedCandidateRows);
+    }
+
+    [Fact]
+    public void GenericPdfMapperSupportsSerialPrefixAndHyphenatedMonthDate()
+    {
+        var result = GenericPdfTableMapper.Map(
+        [
+            "7 03-Nov-2026 03-Nov-2026 CASH DEPOSIT 0.00 2,000.00 12,500.00"
+        ],
+        "bank");
+
+        var transaction = Assert.Single(result.Transactions);
+        Assert.Equal("credit", transaction.Direction);
+        Assert.Equal(2_000m, transaction.Amount);
+        Assert.Equal("CASH DEPOSIT", transaction.Narration);
+    }
+
+    [Fact]
+    public void GenericPdfMapperSupportsDottedDatesWithoutTreatingThemAsAmounts()
+    {
+        var result = GenericPdfTableMapper.Map(
+        [
+            "Opening Balance 10,000.00",
+            "1 03.11.2026 03.11.2026 UPI PURCHASE 500.00 9,500.00 DR",
+            "2 04.11.2026 04.11.2026 REFUND 1,000.00 10,500.00 CR"
+        ],
+        "bank");
+
+        Assert.Equal(2, result.Transactions.Count);
+        Assert.Equal("debit", result.Transactions[0].Direction);
+        Assert.Equal(500m, result.Transactions[0].Amount);
+        Assert.Equal("credit", result.Transactions[1].Direction);
+        Assert.Equal(1_000m, result.Transactions[1].Amount);
+        Assert.Equal("matched", result.Reconciliation.Status);
+        Assert.DoesNotContain("03.11", result.Transactions[0].Narration);
     }
 
     private sealed class RejectingOcrService : IStatementOcrService

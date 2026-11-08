@@ -12,7 +12,7 @@ public sealed partial class StatementParser : IStatementParser
 {
     public const long MaximumFileBytes = 10 * 1024 * 1024;
     public const int MaximumTransactions = 5000;
-    private const string ParserVersion = "2.3.0";
+    private const string ParserVersion = "2.5.0";
 
     private readonly IStatementOcrService _ocrService;
 
@@ -42,6 +42,7 @@ public sealed partial class StatementParser : IStatementParser
     [
         "dd/MM/yyyy", "d/M/yyyy", "dd-MM-yyyy", "d-M-yyyy",
         "dd/MM/yy", "d/M/yy", "dd-MM-yy", "d-M-yy",
+        "dd.MM.yyyy", "d.M.yyyy", "dd.MM.yy", "d.M.yy",
         "yyyy-MM-dd", "dd MMM yyyy", "d MMM yyyy"
     ];
 
@@ -228,23 +229,30 @@ public sealed partial class StatementParser : IStatementParser
 
         var lines = new List<string>();
         var positionedLines = new List<string>();
+        var positionedWords = new List<PositionedPdfWord>();
+        var pageNumber = 0;
         foreach (var page in document.GetPages())
         {
+            pageNumber++;
             var text = ContentOrderTextExtractor.GetText(page);
             lines.AddRange(text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries));
 
-            var pageLines = page
+            var pageWords = page
                 .GetWords(NearestNeighbourWordExtractor.Instance)
                 .Where(word => !string.IsNullOrWhiteSpace(word.Text))
-                .GroupBy(word => Math.Round(word.BoundingBox.Bottom / 2.5) * 2.5)
-                .OrderByDescending(group => group.Key)
-                .Select(group => string.Join(
-                    " ",
-                    group
-                        .OrderBy(word => word.BoundingBox.Left)
-                        .Select(word => word.Text)));
-            positionedLines.AddRange(pageLines);
+                .ToArray();
+            positionedWords.AddRange(pageWords.Select(word => new PositionedPdfWord(
+                pageNumber,
+                word.Text,
+                word.BoundingBox.Left,
+                word.BoundingBox.Right,
+                word.BoundingBox.Bottom)));
         }
+
+        positionedLines.AddRange(
+            PositionedPdfRowReconstructor.ReconstructRows(
+                positionedWords,
+                sourceType));
 
         IEnumerable<string> reconciliationLines = lines.Concat(positionedLines).ToArray();
         var transactions = ParsePdfLines(lines, sourceType);
@@ -711,12 +719,12 @@ public sealed partial class StatementParser : IStatementParser
     [GeneratedRegex("\\s+")]
     private static partial Regex WhitespaceRegex();
 
-    [GeneratedRegex("^(?<date>\\d{1,2}[-/]\\d{1,2}[-/]\\d{2,4})\\s+(?<narration>.+?)\\s+(?<amount>\\(?-?[0-9][0-9,]*\\.[0-9]{2}\\)?)\\s*(?<marker>CR|DR|CREDIT|DEBIT)?$", RegexOptions.IgnoreCase)]
+    [GeneratedRegex("^(?<date>\\d{1,2}[-/.]\\d{1,2}[-/.]\\d{2,4})\\s+(?<narration>.+?)\\s+(?<amount>\\(?-?[0-9][0-9,]*\\.[0-9]{2}\\)?)\\s*(?<marker>CR|DR|CREDIT|DEBIT)?$", RegexOptions.IgnoreCase)]
     private static partial Regex PdfLineRegex();
 
     [GeneratedRegex("\\b[0-9]{10,22}\\b")]
     private static partial Regex ReferenceRegex();
 
-    [GeneratedRegex("(?<![0-9])[0-9][0-9,]*\\.[0-9]{2}(?![0-9])")]
+    [GeneratedRegex("(?<![0-9.])[0-9][0-9,]*\\.[0-9]{2}(?![0-9.])")]
     private static partial Regex AmountTokenRegex();
 }
